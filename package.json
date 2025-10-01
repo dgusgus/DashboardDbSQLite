@@ -1,0 +1,27 @@
+{
+  "name": "visor-datos",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/copy-wasm.js && vite",
+    "build": "node scripts/copy-wasm.js && vite build",
+    "copy-wasm": "node scripts/copy-wasm.js"
+  },
+  "dependencies": {
+    "@heroicons/vue": "^2.2.0",
+    "@tailwindcss/vite": "^4.1.13",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.21",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.7",
+    "sql.js": "^1.13.0",
+    "daisyui": "^5.1.18",
+    "tailwindcss": "^4.1.13",
+    "lucide-vue-next": "^0.544.0",
+    "@vueuse/core": "^13.9.0"
+  }
+}
