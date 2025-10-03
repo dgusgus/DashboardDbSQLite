@@ -1,4 +1,4 @@
-<!-- src/App.vue - Componente principal -->
+<!-- src/App.vue - ACTUALIZADO sin vehículos -->
 <template>
   <div id="app" class="min-h-screen bg-base-200">
     <!-- Loading Screen -->
@@ -39,8 +39,9 @@
             <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
               <li><router-link to="/">🏠 Dashboard</router-link></li>
               <li><router-link to="/operadores">👷 Operadores</router-link></li>
-              <li><router-link to="/vehiculos">🚗 Vehículos</router-link></li>
+              <li><router-link to="/notarios">📝 Notarios</router-link></li>
               <li><router-link to="/recintos">🏫 Recintos</router-link></li>
+              <li><router-link to="/mesas">🗳️ Mesas</router-link></li>
               <li><router-link to="/reportes">📊 Reportes</router-link></li>
             </ul>
           </div>
@@ -53,8 +54,9 @@
           <ul class="menu menu-horizontal px-1">
             <li><router-link to="/" class="btn btn-ghost">🏠 Dashboard</router-link></li>
             <li><router-link to="/operadores" class="btn btn-ghost">👷 Operadores</router-link></li>
-            <li><router-link to="/vehiculos" class="btn btn-ghost">🚗 Vehículos</router-link></li>
+            <li><router-link to="/notarios" class="btn btn-ghost">📝 Notarios</router-link></li>
             <li><router-link to="/recintos" class="btn btn-ghost">🏫 Recintos</router-link></li>
+            <li><router-link to="/mesas" class="btn btn-ghost">🗳️ Mesas</router-link></li>
             <li><router-link to="/reportes" class="btn btn-ghost">📊 Reportes</router-link></li>
           </ul>
         </div>

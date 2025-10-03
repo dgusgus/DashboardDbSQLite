@@ -1,9 +1,10 @@
-// src/router/index.js - Configuración de rutas
+// src/router/index.js - ACTUALIZADO para nueva estructura
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '@/views/Dashboard.vue'
 import Operadores from '@/views/Operadores.vue'
-import Vehiculos from '@/views/Vehiculos.vue'
+import Notarios from '@/views/Notarios.vue'
 import Recintos from '@/views/Recintos.vue'
+import Mesas from '@/views/Mesas.vue'
 import Reportes from '@/views/Reportes.vue'
 
 const router = createRouter({
@@ -28,12 +29,12 @@ const router = createRouter({
       }
     },
     {
-      path: '/vehiculos',
-      name: 'vehiculos',
-      component: Vehiculos,
+      path: '/notarios',
+      name: 'notarios',
+      component: Notarios,
       meta: { 
-        title: 'Vehículos',
-        icon: '🚗'
+        title: 'Notarios',
+        icon: '📝'
       }
     },
     {
@@ -43,6 +44,15 @@ const router = createRouter({
       meta: { 
         title: 'Recintos',
         icon: '🏫'
+      }
+    },
+    {
+      path: '/mesas',
+      name: 'mesas',
+      component: Mesas,
+      meta: { 
+        title: 'Mesas',
+        icon: '🗳️'
       }
     },
     {
@@ -62,7 +72,6 @@ const router = createRouter({
   ]
 })
 
-// Guard para actualizar título de la página
 router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title || 'Sistema'} - Consultas de Operadores`
   next()

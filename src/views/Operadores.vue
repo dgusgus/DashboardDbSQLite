@@ -1,4 +1,4 @@
-<!-- src/views/Operadores.vue - Vista de operadores -->
+<!-- src/views/Operadores.vue - CORREGIDO -->
 <template>
   <div class="space-y-6">
     <!-- Header -->
@@ -39,7 +39,6 @@
     <!-- Filters Panel -->
     <FilterPanel 
       :show-type-filter="true"
-      :show-status-filter="true"
       @filter="applyFilters"
     />
 
@@ -71,7 +70,7 @@ const loading = ref(false)
 const searchTerm = ref('')
 const activeFilters = ref({})
 
-// Configuración de columnas
+// Configuración de columnas (SIN vehículo)
 const operadoresColumns = [
   { key: 'nombre', title: 'Nombre', type: 'text' },
   { key: 'cedula', title: 'Cédula', type: 'text' },
@@ -79,9 +78,9 @@ const operadoresColumns = [
   { key: 'tipo_operador', title: 'Tipo', type: 'badge' },
   { key: 'grupo', title: 'Grupo', type: 'text' },
   { key: 'recinto', title: 'Recinto', type: 'text' },
-  { key: 'vehiculo_placa', title: 'Vehículo', type: 'text' },
+  { key: 'municipio', title: 'Municipio', type: 'text' },
   { key: 'coordinador', title: 'Coordinador', type: 'text' },
-  { key: 'estado', title: 'Estado', type: 'badge' }
+  { key: 'jefe', title: 'Jefe', type: 'text' }
 ]
 
 // Computed
@@ -95,18 +94,13 @@ const filteredOperadores = computed(() => {
       op.nombre?.toLowerCase().includes(term) ||
       op.cedula?.includes(term) ||
       op.grupo?.toLowerCase().includes(term) ||
-      op.recinto?.toLowerCase().includes(term) ||
-      op.vehiculo_placa?.toLowerCase().includes(term)
+      op.recinto?.toLowerCase().includes(term)
     )
   }
 
-  // Aplicar otros filtros
+  // Aplicar filtros de tipo
   if (activeFilters.value.tipo) {
     filtered = filtered.filter(op => op.tipo_operador === activeFilters.value.tipo)
-  }
-
-  if (activeFilters.value.estado) {
-    filtered = filtered.filter(op => op.estado === activeFilters.value.estado)
   }
 
   return filtered
@@ -139,7 +133,6 @@ const refreshData = () => {
 const exportOperadores = (data = null) => {
   const dataToExport = data || filteredOperadores.value
   
-  // Convertir a CSV simple
   const headers = operadoresColumns.map(col => col.title).join(',')
   const rows = dataToExport.map(row => 
     operadoresColumns.map(col => row[col.key] || '').join(',')
@@ -147,7 +140,6 @@ const exportOperadores = (data = null) => {
   
   const csvContent = [headers, ...rows].join('\n')
   
-  // Descargar archivo
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)

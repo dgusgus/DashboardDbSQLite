@@ -1,4 +1,4 @@
-<!-- src/views/Reportes.vue - Vista de reportes -->
+<!-- src/views/Reportes.vue - ACTUALIZADO -->
 <template>
   <div class="space-y-6">
     <!-- Header -->
@@ -7,7 +7,7 @@
       <p class="text-sm opacity-70">Consultas específicas y reportes detallados</p>
     </div>
 
-    <!-- Quick Reports -->
+    <!-- Quick Reports (SIN vehículos) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div 
         v-for="report in availableReports" 
@@ -65,7 +65,7 @@
           <textarea 
             v-model="customQuery"
             class="textarea textarea-bordered h-24 font-mono text-sm"
-            placeholder="SELECT * FROM operador WHERE tipo_operador = 'rural';"
+            placeholder="SELECT * FROM operador WHERE tipo = 'rural';"
           ></textarea>
         </div>
         <div class="card-actions justify-end">
@@ -122,33 +122,35 @@ const customResults = ref([])
 const customError = ref('')
 const isExecutingCustom = ref(false)
 
-// Reportes disponibles
+// Reportes disponibles (SIN vehículos, CON nuevas entidades)
 const availableReports = [
   {
-    id: 'operadores-vehiculos',
-    title: 'Operadores con Vehículos',
-    description: 'Operadores rurales y sus vehículos asignados',
-    icon: '🚗👷',
-    query: queries.getOperadorConVehiculo(),
+    id: 'jerarquia-completa',
+    title: 'Jerarquía Organizacional',
+    description: 'Jefes, coordinadores, grupos y operadores',
+    icon: '👥🏢',
+    query: queries.getJerarquiaCompleta(),
     columns: [
-      { key: 'operador', title: 'Operador', type: 'text' },
-      { key: 'cedula', title: 'Cédula', type: 'text' },
-      { key: 'placa', title: 'Placa', type: 'text' },
-      { key: 'vehiculo', title: 'Vehículo', type: 'text' },
-      { key: 'chofer', title: 'Chofer', type: 'text' },
-      { key: 'recinto', title: 'Recinto', type: 'text' },
-      { key: 'coordinador', title: 'Coordinador', type: 'text' }
+      { key: 'jefe', title: 'Jefe', type: 'text' },
+      { key: 'cargo_jefe', title: 'Cargo Jefe', type: 'text' },
+      { key: 'coordinador', title: 'Coordinador', type: 'text' },
+      { key: 'cedula_coordinador', title: 'CI Coord.', type: 'text' },
+      { key: 'grupo', title: 'Grupo', type: 'text' },
+      { key: 'total_operadores', title: 'Total Op.', type: 'text' },
+      { key: 'operadores_rurales', title: 'Rurales', type: 'text' },
+      { key: 'operadores_urbanos', title: 'Urbanos', type: 'text' }
     ]
   },
   {
     id: 'coordinadores-grupos',
     title: 'Coordinadores y Grupos',
     description: 'Coordinadores con sus grupos y operadores',
-    icon: '👥🏢',
+    icon: '👥📋',
     query: queries.getCoordinadorConGrupo(),
     columns: [
       { key: 'coordinador', title: 'Coordinador', type: 'text' },
-      { key: 'codigo_coordinador', title: 'Código', type: 'text' },
+      { key: 'cedula_coordinador', title: 'Cédula', type: 'text' },
+      { key: 'coordinador_telefono', title: 'Teléfono', type: 'phone' },
       { key: 'jefe', title: 'Jefe', type: 'text' },
       { key: 'grupo', title: 'Grupo', type: 'text' },
       { key: 'total_operadores', title: 'Total Op.', type: 'text' },
@@ -159,7 +161,7 @@ const availableReports = [
   {
     id: 'operadores-departamento',
     title: 'Operadores por Ubicación',
-    description: 'Distribución por departamento/provincia/municipio',
+    description: 'Distribución geográfica completa',
     icon: '📍📊',
     query: queries.getOperadoresPorDepartamento(),
     columns: [
@@ -168,21 +170,24 @@ const availableReports = [
       { key: 'municipio', title: 'Municipio', type: 'text' },
       { key: 'total_operadores', title: 'Total', type: 'text' },
       { key: 'rurales', title: 'Rurales', type: 'text' },
-      { key: 'urbanos', title: 'Urbanos', type: 'text' }
+      { key: 'urbanos', title: 'Urbanos', type: 'text' },
+      { key: 'recintos', title: 'Recintos', type: 'text' },
+      { key: 'mesas', title: 'Mesas', type: 'text' }
     ]
   },
   {
-    id: 'vehiculos-operadores',
-    title: 'Vehículos con Operadores',
-    description: 'Vehículos y lista de operadores transportados',
-    icon: '🚐👥',
-    query: queries.getVehiculosConOperadores(),
+    id: 'mesas-completo',
+    title: 'Mesas con Asignaciones',
+    description: 'Mesas con operadores y notarios',
+    icon: '🗳️👥',
+    query: queries.getAllMesas(),
     columns: [
-      { key: 'placa', title: 'Placa', type: 'text' },
-      { key: 'vehiculo', title: 'Vehículo', type: 'text' },
-      { key: 'chofer', title: 'Chofer', type: 'text' },
-      { key: 'operadores_transportados', title: 'Cant. Op.', type: 'text' },
-      { key: 'lista_operadores', title: 'Lista Operadores', type: 'text' }
+      { key: 'numero', title: 'Nº Mesa', type: 'text' },
+      { key: 'recinto', title: 'Recinto', type: 'text' },
+      { key: 'operador', title: 'Operador', type: 'text' },
+      { key: 'notario', title: 'Notario', type: 'text' },
+      { key: 'asiento_electoral', title: 'Asiento', type: 'text' },
+      { key: 'actas_registradas', title: 'Actas', type: 'text' }
     ]
   }
 ]
