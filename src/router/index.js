@@ -1,10 +1,10 @@
-// src/router/index.js - ACTUALIZADO para nueva estructura
+// src/router/index.js - ACTUALIZADO: Actas reemplaza a Mesas
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '@/views/Dashboard.vue'
 import Operadores from '@/views/Operadores.vue'
 import Notarios from '@/views/Notarios.vue'
 import Recintos from '@/views/Recintos.vue'
-import Mesas from '@/views/Mesas.vue'
+import Actas from '@/views/Actas.vue'
 import Reportes from '@/views/Reportes.vue'
 
 const router = createRouter({
@@ -16,7 +16,8 @@ const router = createRouter({
       component: Dashboard,
       meta: { 
         title: 'Dashboard',
-        icon: '🏠'
+        icon: '🏠',
+        description: 'Vista general del sistema'
       }
     },
     {
@@ -25,7 +26,8 @@ const router = createRouter({
       component: Operadores,
       meta: { 
         title: 'Operadores',
-        icon: '👷'
+        icon: '👷',
+        description: 'Gestión de operadores electorales'
       }
     },
     {
@@ -34,7 +36,8 @@ const router = createRouter({
       component: Notarios,
       meta: { 
         title: 'Notarios',
-        icon: '📝'
+        icon: '📝',
+        description: 'Gestión de notarios electorales'
       }
     },
     {
@@ -43,16 +46,18 @@ const router = createRouter({
       component: Recintos,
       meta: { 
         title: 'Recintos',
-        icon: '🏫'
+        icon: '🏫',
+        description: 'Ubicaciones y recintos electorales'
       }
     },
     {
-      path: '/mesas',
-      name: 'mesas',
-      component: Mesas,
+      path: '/actas',
+      name: 'actas',
+      component: Actas,
       meta: { 
-        title: 'Mesas',
-        icon: '🗳️'
+        title: 'Actas',
+        icon: '📋',
+        description: 'Registro y control de actas'
       }
     },
     {
@@ -61,8 +66,14 @@ const router = createRouter({
       component: Reportes,
       meta: { 
         title: 'Reportes',
-        icon: '📊'
+        icon: '📊',
+        description: 'Análisis y reportes del sistema'
       }
+    },
+    // Redirecciones de URLs antiguas
+    {
+      path: '/mesas',
+      redirect: '/actas'
     },
     {
       path: '/:pathMatch(.*)*',
@@ -72,8 +83,16 @@ const router = createRouter({
   ]
 })
 
+// Guardia de navegación
 router.beforeEach((to, from, next) => {
+  // Actualizar título del documento
   document.title = `${to.meta.title || 'Sistema'} - Consultas de Operadores`
+  
+  // Log de navegación en desarrollo
+  if (import.meta.env.DEV) {
+    console.log(`🧭 Navegando: ${from.path} → ${to.path}`)
+  }
+  
   next()
 })
 

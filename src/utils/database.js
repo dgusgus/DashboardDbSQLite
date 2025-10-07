@@ -1,4 +1,4 @@
-// src/utils/database.js - Versión mejorada
+// src/utils/database.js - ACTUALIZADO: stats inferidas sin campo 'tipo'
 class DatabaseManager {
   constructor() {
     this.db = null
@@ -60,12 +60,11 @@ class DatabaseManager {
     }
   }
 
-  // 🔄 NUEVO: Cargar BD con reintentos automáticos
   async loadDatabaseWithRetry(maxRetries = 3) {
     for (let i = 0; i < maxRetries; i++) {
       try {
         const response = await fetch('/operadores.db', {
-          cache: 'no-cache', // Siempre obtener la versión más reciente
+          cache: 'no-cache',
           headers: {
             'Cache-Control': 'no-cache'
           }
@@ -82,7 +81,6 @@ class DatabaseManager {
         
         if (i === maxRetries - 1) throw error
         
-        // Esperar antes del siguiente intento
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
       }
     }
@@ -98,15 +96,13 @@ class DatabaseManager {
     })
   }
 
-  // 🔍 ACTUALIZADO: Validación para nueva estructura
   validateDatabase() {
     try {
-      // Verificar tablas esperadas
       const tables = this.query("SELECT name FROM sqlite_master WHERE type='table'")
       const expectedTables = [
         'operador', 'recinto', 'coordinador', 'grupo', 'jefe',
         'departamento', 'provincia', 'municipio', 'asiento_electoral',
-        'notario', 'mesa', 'acta', 'cuenta'
+        'notario', 'acta', 'cuenta'
       ]
       
       const tableNames = tables.map(t => t.name)
@@ -121,7 +117,6 @@ class DatabaseManager {
         }
       }
 
-      // Contar registros totales
       let totalRecords = 0
       for (const table of expectedTables) {
         try {
@@ -149,9 +144,6 @@ class DatabaseManager {
     }
   }
 
-
-
-  // 🔍 MEJORADO: Test de conexión más robusto
   testConnection() {
     if (!this.isLoaded) {
       return { connected: false, error: 'Base de datos no inicializada' }
@@ -176,12 +168,12 @@ class DatabaseManager {
     }
   }
 
-  // 📊 ACTUALIZADO: Estadísticas para nueva estructura
+  // 📊 ACTUALIZADO: Estadísticas inferidas (sin campo 'tipo' directo)
   getStats() {
     const tables = [
       'operador', 'recinto', 'coordinador', 'grupo', 'jefe',
       'departamento', 'provincia', 'municipio', 'asiento_electoral',
-      'notario', 'mesa', 'acta', 'cuenta'
+      'notario', 'acta', 'cuenta'
     ]
     
     const stats = {}
@@ -198,18 +190,54 @@ class DatabaseManager {
       }
     }
     
-    // Estadísticas adicionales
     stats.total = totalRecords
     stats.dbSize = this.dbSize
     stats.lastUpdate = this.lastUpdate
     
-    // Estadísticas específicas del dominio - ACTUALIZADAS
+    // 📊 ESTADÍSTICAS ESPECÍFICAS INFERIDAS
     try {
-      stats.operadores_rurales = this.queryFirst("SELECT COUNT(*) as count FROM operador WHERE tipo = 'rural'")?.count || 0
-      stats.operadores_urbanos = this.queryFirst("SELECT COUNT(*) as count FROM operador WHERE tipo = 'urbano'")?.count || 0
-      stats.recintos_rurales = this.queryFirst("SELECT COUNT(*) as count FROM recinto WHERE distrito = 0")?.count || 0
-      stats.recintos_urbanos = this.queryFirst("SELECT COUNT(*) as count FROM recinto WHERE distrito > 0")?.count || 0
-      stats.mesas_con_actas = this.queryFirst("SELECT COUNT(DISTINCT mesa_id) as count FROM acta")?.count || 0
+      // Operadores rurales: distrito = 0
+      stats.operadores_rurales = this.queryFirst(`
+        SELECT COUNT(*) as count 
+        FROM operador o 
+        JOIN recinto r ON o.recinto_id = r.id 
+        WHERE r.distrito = 0
+      `)?.count || 0
+      
+      // Operadores urbanos: distrito > 0
+      stats.operadores_urbanos = this.queryFirst(`
+        SELECT COUNT(*) as count 
+        FROM operador o 
+        JOIN recinto r ON o.recinto_id = r.id 
+        WHERE r.distrito > 0
+      `)?.count || 0
+      
+      // Recintos rurales
+      stats.recintos_rurales = this.queryFirst(`
+        SELECT COUNT(*) as count FROM recinto WHERE distrito = 0
+      `)?.count || 0
+      
+      // Recintos urbanos
+      stats.recintos_urbanos = this.queryFirst(`
+        SELECT COUNT(*) as count FROM recinto WHERE distrito > 0
+      `)?.count || 0
+      
+      // Notarios rurales
+      stats.notarios_rurales = this.queryFirst(`
+        SELECT COUNT(*) as count 
+        FROM notario n 
+        JOIN recinto r ON n.recinto_id = r.id 
+        WHERE r.distrito = 0
+      `)?.count || 0
+      
+      // Notarios urbanos
+      stats.notarios_urbanos = this.queryFirst(`
+        SELECT COUNT(*) as count 
+        FROM notario n 
+        JOIN recinto r ON n.recinto_id = r.id 
+        WHERE r.distrito > 0
+      `)?.count || 0
+      
     } catch (error) {
       console.warn('⚠️ Error obteniendo estadísticas específicas:', error)
     }
@@ -217,52 +245,69 @@ class DatabaseManager {
     return stats
   }
 
-
-
-
-  // En database.js - actualizar el método searchGlobal
-  // 🔍 ACTUALIZADO: Búsqueda global con nuevas entidades
   searchGlobal(term, limit = 20) {
     if (!term || term.length < 2) return []
     
     const searchTerm = `%${term.toLowerCase()}%`
     
     try {
-      // Usar la query centralizada desde queries.js
-      const results = this.query(queries.searchGlobal(term))
-      return results.slice(0, limit)
+      const results = this.query(`
+        SELECT 'operador' as tipo, o.id, o.nombre as titulo, o.ci as subtitulo,
+               COALESCE(g.nombre, 'Sin grupo') || ' | ' || COALESCE(r.nombre, 'Sin recinto') as descripcion
+        FROM operador o
+        LEFT JOIN grupo g ON o.grupo_id = g.id
+        LEFT JOIN recinto r ON o.recinto_id = r.id
+        WHERE o.nombre LIKE ? OR o.ci LIKE ?
+        
+        UNION ALL
+        
+        SELECT 'notario' as tipo, n.id, n.nombre as titulo, n.ci as subtitulo,
+               COALESCE(r.nombre, 'Sin recinto') as descripcion
+        FROM notario n
+        LEFT JOIN recinto r ON n.recinto_id = r.id
+        WHERE n.nombre LIKE ? OR n.ci LIKE ?
+        
+        UNION ALL
+        
+        SELECT 'recinto' as tipo, r.id, r.nombre as titulo, r.direccion as subtitulo,
+               COALESCE(ae.nombre, 'Sin asiento') as descripcion
+        FROM recinto r
+        LEFT JOIN asiento_electoral ae ON r.asiento_id = ae.id
+        WHERE r.nombre LIKE ? OR r.direccion LIKE ?
+        
+        UNION ALL
+        
+        SELECT 'acta' as tipo, a.id, a.codigo as titulo, r.nombre as subtitulo,
+               COALESCE(m.nombre, 'Sin municipio') as descripcion
+        FROM acta a
+        LEFT JOIN recinto r ON a.recinto_id = r.id
+        LEFT JOIN asiento_electoral ae ON r.asiento_id = ae.id
+        LEFT JOIN municipio m ON ae.municipio_id = m.id
+        WHERE a.codigo LIKE ?
+        
+        LIMIT ?
+      `, [
+        searchTerm, searchTerm, // operador
+        searchTerm, searchTerm, // notario
+        searchTerm, searchTerm, // recinto
+        searchTerm,             // acta
+        limit
+      ])
+      
+      return results
       
     } catch (error) {
       console.error('❌ Error en búsqueda global:', error)
-      
-      // Fallback: búsqueda básica en operadores
-      try {
-        return this.query(`
-          SELECT 
-            'operador' as tipo,
-            id,
-            nombre as titulo,
-            ci as subtitulo,
-            tipo as descripcion
-          FROM operador 
-          WHERE nombre LIKE ? OR ci LIKE ?
-          LIMIT ?
-        `, [searchTerm, searchTerm, limit])
-      } catch (fallbackError) {
-        return []
-      }
+      return []
     }
   }
 
-
-  // 🔄 NUEVO: Recargar base de datos sin reiniciar app
   async reload() {
     try {
       console.log('🔄 Recargando base de datos...')
       
       const arrayBuffer = await this.loadDatabaseWithRetry()
       
-      // Cerrar BD anterior si existe
       if (this.db) {
         this.db.close()
       }
@@ -285,14 +330,13 @@ class DatabaseManager {
     }
   }
 
-  // Mantener métodos existentes
   query(sql, params = []) {
     if (!this.isLoaded) {
       throw new Error('BD no inicializada')
     }
 
     try {
-      const results = this.db.exec(sql)
+      const results = this.db.exec(sql, params)
       
       if (results.length === 0) return []
       

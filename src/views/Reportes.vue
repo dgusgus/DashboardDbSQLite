@@ -1,101 +1,239 @@
-<!-- src/views/Reportes.vue - ACTUALIZADO -->
+<!-- src/views/Reportes.vue - ACTUALIZADO con análisis de actas -->
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div>
-      <h1 class="text-3xl font-bold">📊 Reportes y Consultas</h1>
-      <p class="text-sm opacity-70">Consultas específicas y reportes detallados</p>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-bold">📊 Reportes y Análisis</h1>
+        <p class="text-sm opacity-70">Estadísticas detalladas del sistema electoral</p>
+      </div>
+      <div class="flex gap-2">
+        <button @click="exportAllReports" class="btn btn-outline gap-2">
+          <span>📦</span>
+          Exportar Todo
+        </button>
+        <button @click="refreshData" class="btn btn-primary gap-2" :disabled="loading">
+          <span v-if="loading" class="loading loading-spinner loading-sm"></span>
+          <span v-else>🔄</span>
+          Actualizar
+        </button>
+      </div>
     </div>
 
-    <!-- Quick Reports (SIN vehículos) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div 
-        v-for="report in availableReports" 
-        :key="report.id"
-        class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-        @click="loadReport(report.id)"
+    <!-- Tabs de Reportes -->
+    <div class="tabs tabs-boxed bg-base-100 shadow-lg">
+      <a 
+        class="tab gap-2" 
+        :class="{ 'tab-active': activeTab === 'general' }"
+        @click="activeTab = 'general'"
       >
-        <div class="card-body text-center">
-          <div class="text-3xl mb-2">{{ report.icon }}</div>
-          <h3 class="card-title justify-center text-sm">{{ report.title }}</h3>
-          <p class="text-xs opacity-70">{{ report.description }}</p>
-          <div class="card-actions justify-center mt-2">
-            <button 
-              class="btn btn-primary btn-sm" 
-              :class="{ 'loading': loadingReports[report.id] }"
-              :disabled="loadingReports[report.id]"
-            >
-              {{ loadingReports[report.id] ? 'Cargando...' : 'Ver Reporte' }}
-            </button>
+        <span>📈</span>
+        <span>General</span>
+      </a>
+      <a 
+        class="tab gap-2" 
+        :class="{ 'tab-active': activeTab === 'geografico' }"
+        @click="activeTab = 'geografico'"
+      >
+        <span>🗺️</span>
+        <span>Geográfico</span>
+      </a>
+      <a 
+        class="tab gap-2" 
+        :class="{ 'tab-active': activeTab === 'jerarquia' }"
+        @click="activeTab = 'jerarquia'"
+      >
+        <span>👥</span>
+        <span>Jerarquía</span>
+      </a>
+      <a 
+        class="tab gap-2" 
+        :class="{ 'tab-active': activeTab === 'actas' }"
+        @click="activeTab = 'actas'"
+      >
+        <span>📋</span>
+        <span>Actas</span>
+      </a>
+      <a 
+        class="tab gap-2" 
+        :class="{ 'tab-active': activeTab === 'validacion' }"
+        @click="activeTab = 'validacion'"
+      >
+        <span>✅</span>
+        <span>Validación</span>
+      </a>
+    </div>
+
+    <!-- Contenido de Tabs -->
+    <div class="min-h-[400px]">
+      <!-- Tab: Estadísticas Generales -->
+      <div v-show="activeTab === 'general'" class="space-y-6">
+        <StatsCards :stats="generalStats" />
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Gráfico de distribución -->
+          <div class="card bg-base-100 shadow-lg">
+            <div class="card-body">
+              <h3 class="card-title text-lg">📊 Distribución por Tipo</h3>
+              <div class="stats stats-vertical shadow">
+                <div class="stat">
+                  <div class="stat-title">Operadores Rurales</div>
+                  <div class="stat-value text-warning">{{ stats.operadores_rurales }}</div>
+                  <div class="stat-desc">{{ porcentajeRurales }}% del total</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-title">Operadores Urbanos</div>
+                  <div class="stat-value text-info">{{ stats.operadores_urbanos }}</div>
+                  <div class="stat-desc">{{ porcentajeUrbanos }}% del total</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen de recursos -->
+          <div class="card bg-base-100 shadow-lg">
+            <div class="card-body">
+              <h3 class="card-title text-lg">🎯 Cobertura del Sistema</h3>
+              <div class="space-y-3">
+                <div>
+                  <div class="flex justify-between text-sm mb-1">
+                    <span>Recintos con operadores</span>
+                    <span class="font-semibold">{{ recintosConOperadores }}%</span>
+                  </div>
+                  <progress class="progress progress-primary" :value="recintosConOperadores" max="100"></progress>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1">
+                    <span>Recintos con notarios</span>
+                    <span class="font-semibold">{{ recintosConNotarios }}%</span>
+                  </div>
+                  <progress class="progress progress-success" :value="recintosConNotarios" max="100"></progress>
+                </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1">
+                    <span>Recintos con actas</span>
+                    <span class="font-semibold">{{ recintosConActas }}%</span>
+                  </div>
+                  <progress class="progress progress-warning" :value="recintosConActas" max="100"></progress>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Active Report -->
-    <div v-if="activeReport && reportData.length > 0" class="space-y-4">
-      <div class="alert alert-info">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <div>
-          <h3 class="font-bold">{{ activeReport.title }}</h3>
-          <div class="text-xs">{{ activeReport.description }}</div>
+      <!-- Tab: Análisis Geográfico -->
+      <div v-show="activeTab === 'geografico'">
+        <div class="card bg-base-100 shadow-lg">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="card-title">🗺️ Distribución por Departamento</h3>
+              <button @click="exportGeographic" class="btn btn-sm btn-outline gap-2">
+                <span>📤</span>
+                Exportar
+              </button>
+            </div>
+            <DataTable 
+              :data="geograficData"
+              :columns="geograficColumns"
+              :loading="loading"
+              :page-size="15"
+            />
+          </div>
         </div>
       </div>
 
-      <DataTable 
-        :title="activeReport.title"
-        :data="reportData"
-        :columns="reportColumns"
-        :loading="isLoadingReport"
-        :page-size="20"
-        @export="exportReport"
-      />
-    </div>
-
-    <!-- Custom Query Section -->
-    <div class="card bg-base-100 shadow-md">
-      <div class="card-body">
-        <h3 class="card-title">🔧 Consulta Personalizada (Solo Lectura)</h3>
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text">Ingresa tu consulta SQL SELECT:</span>
-          </label>
-          <textarea 
-            v-model="customQuery"
-            class="textarea textarea-bordered h-24 font-mono text-sm"
-            placeholder="SELECT * FROM operador WHERE tipo = 'rural';"
-          ></textarea>
+      <!-- Tab: Jerarquía Organizacional -->
+      <div v-show="activeTab === 'jerarquia'">
+        <div class="card bg-base-100 shadow-lg">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="card-title">👥 Estructura Organizacional</h3>
+              <button @click="exportHierarchy" class="btn btn-sm btn-outline gap-2">
+                <span>📤</span>
+                Exportar
+              </button>
+            </div>
+            <DataTable 
+              :data="hierarchyData"
+              :columns="hierarchyColumns"
+              :loading="loading"
+              :page-size="15"
+            />
+          </div>
         </div>
-        <div class="card-actions justify-end">
-          <button 
-            @click="executeCustomQuery"
-            class="btn btn-primary"
-            :disabled="!customQuery.trim() || isExecutingCustom"
-            :class="{ 'loading': isExecutingCustom }"
-          >
-            {{ isExecutingCustom ? 'Ejecutando...' : '▶️ Ejecutar' }}
-          </button>
+      </div>
+
+      <!-- Tab: NUEVO - Análisis de Actas -->
+      <div v-show="activeTab === 'actas'" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="stat bg-base-100 rounded-lg shadow">
+            <div class="stat-figure text-3xl">📋</div>
+            <div class="stat-title">Total de Actas</div>
+            <div class="stat-value text-2xl">{{ stats.acta || 0 }}</div>
+            <div class="stat-desc">registradas en el sistema</div>
+          </div>
+          
+          <div class="stat bg-base-100 rounded-lg shadow">
+            <div class="stat-figure text-3xl">🏫</div>
+            <div class="stat-title">Promedio por Recinto</div>
+            <div class="stat-value text-2xl text-info">{{ promedioActasPorRecinto }}</div>
+            <div class="stat-desc">actas por ubicación</div>
+          </div>
+
+          <div class="stat bg-base-100 rounded-lg shadow">
+            <div class="stat-figure text-3xl">✅</div>
+            <div class="stat-title">Cobertura</div>
+            <div class="stat-value text-2xl text-success">{{ coberturaActas }}%</div>
+            <div class="stat-desc">recintos con actas</div>
+          </div>
         </div>
 
-        <!-- Custom Query Results -->
-        <div v-if="customResults.length > 0" class="mt-4">
-          <DataTable 
-            title="Resultados de Consulta Personalizada"
-            :data="customResults"
-            :columns="customColumns"
-            :loading="false"
-            :page-size="10"
-            @export="exportCustomResults"
-          />
+        <div class="card bg-base-100 shadow-lg">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="card-title">📋 Actas por Recinto</h3>
+              <button @click="exportActasReport" class="btn btn-sm btn-outline gap-2">
+                <span>📤</span>
+                Exportar
+              </button>
+            </div>
+            <DataTable 
+              :data="actasData"
+              :columns="actasReportColumns"
+              :loading="loading"
+              :page-size="15"
+            />
+          </div>
         </div>
+      </div>
 
-        <div v-if="customError" class="alert alert-error mt-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <!-- Tab: NUEVO - Validación de Cobertura -->
+      <div v-show="activeTab === 'validacion'" class="space-y-6">
+        <div class="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          <span>{{ customError }}</span>
+          <span>Recintos con asignaciones incompletas o faltantes</span>
+        </div>
+
+        <div class="card bg-base-100 shadow-lg">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="card-title">⚠️ Recintos a Revisar</h3>
+              <div class="badge badge-warning gap-2">
+                <span>{{ recintosIncompletos.length }}</span>
+                <span>pendientes</span>
+              </div>
+            </div>
+            
+            <DataTable 
+              :data="recintosIncompletos"
+              :columns="validacionColumns"
+              :loading="loading"
+              :page-size="15"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -103,190 +241,275 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDatabase } from '@/composables/useDatabase.js'
 import { queries } from '@/utils/queries.js'
+import StatsCards from '@/components/StatsCards.vue'
 import DataTable from '@/components/DataTable.vue'
 
-const { query } = useDatabase()
+const { query, getStats } = useDatabase()
 
 // Estado
-const activeReport = ref(null)
-const reportData = ref([])
-const isLoadingReport = ref(false)
-const loadingReports = reactive({})
+const activeTab = ref('general')
+const loading = ref(false)
+const geograficData = ref([])
+const hierarchyData = ref([])
+const actasData = ref([])
+const recintosIncompletos = ref([])
 
-// Custom Query
-const customQuery = ref('')
-const customResults = ref([])
-const customError = ref('')
-const isExecutingCustom = ref(false)
+// Stats
+const stats = computed(() => getStats())
 
-// Reportes disponibles (SIN vehículos, CON nuevas entidades)
-const availableReports = [
-  {
-    id: 'jerarquia-completa',
-    title: 'Jerarquía Organizacional',
-    description: 'Jefes, coordinadores, grupos y operadores',
-    icon: '👥🏢',
-    query: queries.getJerarquiaCompleta(),
-    columns: [
-      { key: 'jefe', title: 'Jefe', type: 'text' },
-      { key: 'cargo_jefe', title: 'Cargo Jefe', type: 'text' },
-      { key: 'coordinador', title: 'Coordinador', type: 'text' },
-      { key: 'cedula_coordinador', title: 'CI Coord.', type: 'text' },
-      { key: 'grupo', title: 'Grupo', type: 'text' },
-      { key: 'total_operadores', title: 'Total Op.', type: 'text' },
-      { key: 'operadores_rurales', title: 'Rurales', type: 'text' },
-      { key: 'operadores_urbanos', title: 'Urbanos', type: 'text' }
-    ]
-  },
-  {
-    id: 'coordinadores-grupos',
-    title: 'Coordinadores y Grupos',
-    description: 'Coordinadores con sus grupos y operadores',
-    icon: '👥📋',
-    query: queries.getCoordinadorConGrupo(),
-    columns: [
-      { key: 'coordinador', title: 'Coordinador', type: 'text' },
-      { key: 'cedula_coordinador', title: 'Cédula', type: 'text' },
-      { key: 'coordinador_telefono', title: 'Teléfono', type: 'phone' },
-      { key: 'jefe', title: 'Jefe', type: 'text' },
-      { key: 'grupo', title: 'Grupo', type: 'text' },
-      { key: 'total_operadores', title: 'Total Op.', type: 'text' },
-      { key: 'operadores_rurales', title: 'Rurales', type: 'text' },
-      { key: 'operadores_urbanos', title: 'Urbanos', type: 'text' }
-    ]
-  },
-  {
-    id: 'operadores-departamento',
-    title: 'Operadores por Ubicación',
-    description: 'Distribución geográfica completa',
-    icon: '📍📊',
-    query: queries.getOperadoresPorDepartamento(),
-    columns: [
-      { key: 'departamento', title: 'Departamento', type: 'text' },
-      { key: 'provincia', title: 'Provincia', type: 'text' },
-      { key: 'municipio', title: 'Municipio', type: 'text' },
-      { key: 'total_operadores', title: 'Total', type: 'text' },
-      { key: 'rurales', title: 'Rurales', type: 'text' },
-      { key: 'urbanos', title: 'Urbanos', type: 'text' },
-      { key: 'recintos', title: 'Recintos', type: 'text' },
-      { key: 'mesas', title: 'Mesas', type: 'text' }
-    ]
-  },
-  {
-    id: 'mesas-completo',
-    title: 'Mesas con Asignaciones',
-    description: 'Mesas con operadores y notarios',
-    icon: '🗳️👥',
-    query: queries.getAllMesas(),
-    columns: [
-      { key: 'numero', title: 'Nº Mesa', type: 'text' },
-      { key: 'recinto', title: 'Recinto', type: 'text' },
-      { key: 'operador', title: 'Operador', type: 'text' },
-      { key: 'notario', title: 'Notario', type: 'text' },
-      { key: 'asiento_electoral', title: 'Asiento', type: 'text' },
-      { key: 'actas_registradas', title: 'Actas', type: 'text' }
-    ]
-  }
+// Configuración de columnas
+const geograficColumns = [
+  { key: 'departamento', title: 'Departamento', type: 'text' },
+  { key: 'provincia', title: 'Provincia', type: 'text' },
+  { key: 'municipio', title: 'Municipio', type: 'text' },
+  { key: 'total_operadores', title: 'Operadores', type: 'text' },
+  { key: 'rurales', title: 'Rurales', type: 'text' },
+  { key: 'urbanos', title: 'Urbanos', type: 'text' },
+  { key: 'recintos', title: 'Recintos', type: 'text' },
+  { key: 'actas_registradas', title: 'Actas', type: 'text' }
 ]
 
-// Computed
-const reportColumns = computed(() => {
-  return activeReport.value ? activeReport.value.columns : []
+const hierarchyColumns = [
+  { key: 'jefe', title: 'Jefe', type: 'text' },
+  { key: 'jefe_telefono', title: 'Teléfono Jefe', type: 'phone' },
+  { key: 'coordinador', title: 'Coordinador', type: 'text' },
+  { key: 'coordinador_telefono', title: 'Teléfono Coord.', type: 'phone' },
+  { key: 'grupo', title: 'Grupo', type: 'text' },
+  { key: 'total_operadores', title: 'Total Op.', type: 'text' },
+  { key: 'operadores_rurales', title: 'Rurales', type: 'text' },
+  { key: 'operadores_urbanos', title: 'Urbanos', type: 'text' }
+]
+
+const actasReportColumns = [
+  { key: 'recinto', title: 'Recinto', type: 'text' },
+  { key: 'tipo', title: 'Tipo', type: 'badge' },
+  { key: 'municipio', title: 'Municipio', type: 'text' },
+  { key: 'total_actas', title: 'Actas', type: 'text' },
+  { key: 'operadores', title: 'Operadores', type: 'text' },
+  { key: 'notarios', title: 'Notarios', type: 'text' }
+]
+
+const validacionColumns = [
+  { key: 'recinto', title: 'Recinto', type: 'text' },
+  { key: 'municipio', title: 'Municipio', type: 'text' },
+  { key: 'operadores', title: 'Operadores', type: 'text' },
+  { key: 'notarios', title: 'Notarios', type: 'text' },
+  { key: 'actas', title: 'Actas', type: 'text' },
+  { key: 'estado', title: 'Estado', type: 'text' }
+]
+
+// Computed properties
+const generalStats = computed(() => [
+  {
+    icon: '👷',
+    title: 'Total Operadores',
+    value: stats.value.operador || 0,
+    desc: `${stats.value.operadores_rurales || 0} rurales, ${stats.value.operadores_urbanos || 0} urbanos`
+  },
+  {
+    icon: '📝',
+    title: 'Notarios',
+    value: stats.value.notario || 0,
+    desc: 'Supervisando recintos'
+  },
+  {
+    icon: '🏫',
+    title: 'Recintos',
+    value: stats.value.recinto || 0,
+    desc: `${stats.value.recintos_rurales || 0} rurales, ${stats.value.recintos_urbanos || 0} urbanos`
+  },
+  {
+    icon: '📋',
+    title: 'Actas Registradas',
+    value: stats.value.acta || 0,
+    desc: 'Documentos en sistema'
+  }
+])
+
+const porcentajeRurales = computed(() => {
+  const total = stats.value.operador || 0
+  if (total === 0) return 0
+  return Math.round(((stats.value.operadores_rurales || 0) / total) * 100)
 })
 
-const customColumns = computed(() => {
-  if (customResults.value.length === 0) return []
-  
-  const firstRow = customResults.value[0]
-  return Object.keys(firstRow).map(key => ({
-    key,
-    title: key.replace(/_/g, ' ').toUpperCase(),
-    type: 'text'
-  }))
+const porcentajeUrbanos = computed(() => {
+  const total = stats.value.operador || 0
+  if (total === 0) return 0
+  return Math.round(((stats.value.operadores_urbanos || 0) / total) * 100)
 })
+
+const recintosConOperadores = computed(() => {
+  const total = stats.value.recinto || 0
+  if (total === 0) return 0
+  // Esto es una aproximación, idealmente necesitarías una query específica
+  return Math.min(100, Math.round(((stats.value.operador || 0) / total) * 100))
+})
+
+const recintosConNotarios = computed(() => {
+  const total = stats.value.recinto || 0
+  if (total === 0) return 0
+  return Math.min(100, Math.round(((stats.value.notario || 0) / total) * 100))
+})
+
+const recintosConActas = computed(() => {
+  const total = stats.value.recinto || 0
+  if (total === 0) return 0
+  // Calcular basado en actas únicas por recinto
+  const actasUnicas = actasData.value.filter(a => a.total_actas > 0).length
+  return Math.min(100, Math.round((actasUnicas / total) * 100))
+})
+
+const promedioActasPorRecinto = computed(() => {
+  const totalRecintos = stats.value.recinto || 0
+  const totalActas = stats.value.acta || 0
+  if (totalRecintos === 0) return 0
+  return (totalActas / totalRecintos).toFixed(1)
+})
+
+const coberturaActas = computed(() => recintosConActas.value)
 
 // Métodos
-const loadReport = async (reportId) => {
-  const report = availableReports.find(r => r.id === reportId)
-  if (!report) return
-
-  loadingReports[reportId] = true
-  isLoadingReport.value = true
-  
+const loadGeographicData = async () => {
   try {
-    const results = query(report.query)
-    activeReport.value = report
-    reportData.value = results
+    geograficData.value = query(queries.getOperadoresPorDepartamento())
   } catch (error) {
-    console.error(`Error cargando reporte ${reportId}:`, error)
-  } finally {
-    loadingReports[reportId] = false
-    isLoadingReport.value = false
+    console.error('Error cargando datos geográficos:', error)
   }
 }
 
-const executeCustomQuery = async () => {
-  if (!customQuery.value.trim()) return
+const loadHierarchyData = async () => {
+  try {
+    hierarchyData.value = query(queries.getJerarquiaCompleta())
+  } catch (error) {
+    console.error('Error cargando jerarquía:', error)
+  }
+}
 
-  // Validación básica - solo permitir SELECT
-  const queryTrimmed = customQuery.value.trim().toUpperCase()
-  if (!queryTrimmed.startsWith('SELECT')) {
-    customError.value = 'Solo se permiten consultas SELECT por seguridad'
+const loadActasData = async () => {
+  try {
+    actasData.value = query(queries.getActasPorRecinto())
+  } catch (error) {
+    console.error('Error cargando datos de actas:', error)
+  }
+}
+
+const loadValidacionData = async () => {
+  try {
+    recintosIncompletos.value = query(queries.getRecintosIncompletos())
+  } catch (error) {
+    console.error('Error cargando validación:', error)
+  }
+}
+
+const refreshData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      loadGeographicData(),
+      loadHierarchyData(),
+      loadActasData(),
+      loadValidacionData()
+    ])
+  } finally {
+    loading.value = false
+  }
+}
+
+const exportGeographic = () => {
+  exportToCSV(geograficData.value, geograficColumns, 'reporte_geografico')
+}
+
+const exportHierarchy = () => {
+  exportToCSV(hierarchyData.value, hierarchyColumns, 'reporte_jerarquia')
+}
+
+const exportActasReport = () => {
+  exportToCSV(actasData.value, actasReportColumns, 'reporte_actas')
+}
+
+const exportAllReports = () => {
+  exportGeographic()
+  exportHierarchy()
+  exportActasReport()
+  
+  showNotification('✅ Todos los reportes han sido exportados')
+}
+
+const exportToCSV = (data, columns, filename) => {
+  if (!data || data.length === 0) {
+    alert('⚠️ No hay datos para exportar')
     return
   }
 
-  customError.value = ''
-  isExecutingCustom.value = true
-
-  try {
-    const results = query(customQuery.value)
-    customResults.value = results
-    
-    if (results.length === 0) {
-      customError.value = 'La consulta no devolvió resultados'
-    }
-  } catch (error) {
-    customError.value = `Error en la consulta: ${error.message}`
-    customResults.value = []
-  } finally {
-    isExecutingCustom.value = false
-  }
-}
-
-const exportReport = (data) => {
-  if (!activeReport.value) return
-  
-  const headers = reportColumns.value.map(col => col.title).join(',')
+  const headers = columns.map(col => col.title).join(',')
   const rows = data.map(row => 
-    reportColumns.value.map(col => row[col.key] || '').join(',')
+    columns.map(col => {
+      const value = row[col.key] || ''
+      // Escapar comillas y comas
+      return value.toString().includes(',') || value.toString().includes('"')
+        ? `"${value.toString().replace(/"/g, '""')}"`
+        : value
+    }).join(',')
   )
   
   const csvContent = [headers, ...rows].join('\n')
-  downloadCSV(csvContent, `reporte_${activeReport.value.id}_${new Date().toISOString().split('T')[0]}.csv`)
-}
-
-const exportCustomResults = (data) => {
-  const headers = customColumns.value.map(col => col.title).join(',')
-  const rows = data.map(row => 
-    customColumns.value.map(col => row[col.key] || '').join(',')
-  )
-  
-  const csvContent = [headers, ...rows].join('\n')
-  downloadCSV(csvContent, `consulta_personalizada_${new Date().toISOString().split('T')[0]}.csv`)
-}
-
-const downloadCSV = (content, filename) => {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   const url = URL.createObjectURL(blob)
+  
   link.setAttribute('href', url)
-  link.setAttribute('download', filename)
+  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`)
   link.style.visibility = 'hidden'
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
+
+const showNotification = (message) => {
+  const notification = document.createElement('div')
+  notification.className = 'toast toast-top toast-center z-50'
+  notification.innerHTML = `<div class="alert alert-success"><span>${message}</span></div>`
+  document.body.appendChild(notification)
+  setTimeout(() => notification.remove(), 2000)
+}
+
+// Lifecycle
+onMounted(() => {
+  refreshData()
+})
 </script>
+
+<style scoped>
+/* Animaciones de tabs */
+.tab {
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  transform: translateY(-2px);
+}
+
+.tab-active {
+  font-weight: 600;
+}
+
+/* Progress bar animations */
+.progress {
+  transition: value 0.3s ease;
+}
+
+/* Card hover effects */
+.card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+.stat:hover {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+</style>
