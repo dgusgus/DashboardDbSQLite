@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/copy-wasm.js && vite",
+    "dev:network": "node scripts/copy-wasm.js && vite --host",
+    "dev:exposed": "node scripts/copy-wasm.js && vite --host 0.0.0.0",
     "build": "node scripts/copy-wasm.js && vite build",
-    "copy-wasm": "node scripts/copy-wasm.js"
+    "preview": "vite preview --host",
+    "copy-wasm": "node scripts/copy-wasm.js",
+    "network-info": "node scripts/network-info.js"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",

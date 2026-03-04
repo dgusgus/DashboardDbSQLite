@@ -1,19 +1,11 @@
-/* import { defineConfig } from 'vite'
-import tailwindcss from '@tailwindcss/vite';
-import vue from '@vitejs/plugin-vue'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [tailwindcss(),vue()],
-}) */
-// vite.config.js - Configuración corregida para pnpm y sql.js
+// vite.config.js - CONFIGURADO PARA RED LOCAL
 import { defineConfig } from 'vite'
-import tailwindcss from '@tailwindcss/vite';
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
-  plugins: [vue(),tailwindcss()],
+  plugins: [vue(), tailwindcss()],
   
   resolve: {
     alias: {
@@ -21,24 +13,36 @@ export default defineConfig({
     },
   },
 
-  // Configuración específica para sql.js con pnpm
-  optimizeDeps: {
-    exclude: ['sql.js'],
-    include: []
-  },
-
+  // ⭐ CONFIGURACIÓN PARA RED LOCAL
   server: {
+    host: true, // ← Esto permite conexiones desde otros dispositivos
+    port: 5173, // Puerto por defecto (puedes cambiarlo)
+    strictPort: false, // Si el puerto está ocupado, usa otro
+    
+    // Configuración CORS para evitar problemas
+    cors: true,
+    
+    // Opcional: Abrir navegador automáticamente
+    open: false,
+    
+    // Configuración para servir archivos WASM
     fs: {
       allow: ['..', './node_modules/sql.js']
     },
-    // Configuración para servir archivos WASM
+    
     headers: {
       'Cross-Origin-Embedder-Policy': 'credentialless',
       'Cross-Origin-Opener-Policy': 'same-origin'
     }
   },
 
-  // Configuración de build para PWA
+  // Configuración para sql.js
+  optimizeDeps: {
+    exclude: ['sql.js'],
+    include: []
+  },
+
+  // Configuración de build
   build: {
     rollupOptions: {
       output: {
@@ -47,19 +51,14 @@ export default defineConfig({
         }
       }
     },
-    // Copiar archivos WASM al build
     assetsInlineLimit: 0,
     copyPublicDir: true
   },
 
-  // Configurar MIME types para archivos WASM
   define: {
     global: 'globalThis',
   },
 
-  // Plugin para copiar archivos WASM
   publicDir: 'public',
-  
-  // Asegurar que los archivos .wasm se sirvan correctamente
   assetsInclude: ['**/*.wasm']
 })

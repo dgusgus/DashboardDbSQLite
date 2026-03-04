@@ -423,171 +423,220 @@
       </div>
     </div>
 
-    <!-- Modal de Detalles MEJORADO -->
-    <dialog ref="detailsModal" class="modal">
-      <div class="modal-box max-w-4xl">
-        <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-        </form>
 
-        <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
-          <span>📋</span>
-          <span>Información Completa del Operador</span>
+
+
+
+
+
+
+<!-- Modal de Detalles OPTIMIZADO PARA MÓVIL -->
+<dialog ref="detailsModal" class="modal">
+  <div class="modal-box max-w-4xl w-full max-h-[95vh] p-0 overflow-hidden">
+    
+    <!-- Header fijo con degradado moderno -->
+    <div class="sticky top-0 z-10 bg-gradient-to-r from-primary to-secondary text-primary-content p-4 shadow-lg">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-lg sm:text-xl flex items-center gap-2">
+          <span class="text-2xl">📋</span>
+          <span class="hidden sm:inline">Información Completa</span>
+          <span class="sm:hidden">Detalles</span>
         </h3>
+        <form method="dialog">
+          <button class="btn btn-circle btn-ghost btn-sm hover:bg-white/20 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
 
-        <div v-if="selectedItem" class="space-y-4">
-          <!-- Info Personal -->
-          <div class="bg-base-200 rounded-lg p-4">
-            <h4 class="font-semibold text-sm mb-3 flex items-center gap-2">
-              <span>👤</span>
-              <span>Datos Personales</span>
-            </h4>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div class="text-xs opacity-60 mb-1">Nombre completo</div>
-                <div class="font-semibold">{{ selectedItem.nombre }}</div>
-              </div>
-              <div>
-                <div class="text-xs opacity-60 mb-1">Cédula de Identidad</div>
-                <div class="font-mono">{{ selectedItem.cedula }} {{ selectedItem.expedido }}</div>
-              </div>
-              <div>
-                <div class="text-xs opacity-60 mb-1">Teléfono</div>
-                <div class="font-mono">{{ selectedItem.telefono || 'No registrado' }}</div>
-              </div>
-              <div>
-                <div class="text-xs opacity-60 mb-1">Correo electrónico</div>
-                <div class="truncate text-xs">{{ selectedItem.correo || 'No registrado' }}</div>
-              </div>
+    <!-- Contenido scrolleable -->
+    <div v-if="selectedItem" class="overflow-y-auto max-h-[calc(95vh-140px)] p-4 space-y-3">
+      
+      <!-- Info Personal -->
+      <div class="card bg-base-200 shadow-sm">
+        <div class="card-body p-3 sm:p-4">
+          <h4 class="font-semibold text-sm mb-2 flex items-center gap-2 text-primary">
+            <span>👤</span>
+            <span>Datos Personales</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">Nombre completo</div>
+              <div class="font-semibold truncate">{{ selectedItem.nombre }}</div>
             </div>
-          </div>
-
-          <!-- Info Organizacional -->
-          <div class="bg-base-200 rounded-lg p-4">
-            <h4 class="font-semibold text-sm mb-3 flex items-center gap-2">
-              <span>🏢</span>
-              <span>Organización</span>
-            </h4>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div class="text-xs opacity-60 mb-1">Tipo de operador</div>
-                <span class="badge" :class="selectedItem.tipo_operador === 'rural' ? 'badge-warning' : 'badge-info'">
-                  {{ selectedItem.tipo_operador === 'rural' ? '🌾 Rural' : '🏙️ Urbano' }}
-                </span>
-              </div>
-              <div>
-                <div class="text-xs opacity-60 mb-1">Cargo</div>
-                <div>{{ selectedItem.cargo || 'Operador' }}</div>
-              </div>
-              <div>
-                <div class="text-xs opacity-60 mb-1">Grupo</div>
-                <div>{{ selectedItem.grupo || 'No asignado' }}</div>
-              </div>
-              <div>
-                <div class="text-xs opacity-60 mb-1">Coordinador</div>
-                <div>{{ selectedItem.coordinador || 'No asignado' }}</div>
-              </div>
-              <div class="col-span-2">
-                <div class="text-xs opacity-60 mb-1">Jefe</div>
-                <div>{{ selectedItem.jefe || 'No asignado' }}</div>
-              </div>
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">CI</div>
+              <div class="font-mono text-sm">{{ selectedItem.cedula }} {{ selectedItem.expedido }}</div>
             </div>
-          </div>
-
-          <!-- Info Ubicación -->
-          <div class="bg-base-200 rounded-lg p-4">
-            <h4 class="font-semibold text-sm mb-3 flex items-center gap-2">
-              <span>📍</span>
-              <span>Ubicación de Trabajo</span>
-            </h4>
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="opacity-60">Recinto:</span>
-                <span class="font-medium text-right">{{ selectedItem.recinto || 'No asignado' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="opacity-60">Asiento Electoral:</span>
-                <span class="text-right">{{ selectedItem.asiento_electoral || 'N/A' }}</span>
-              </div>
-              <div class="divider my-1"></div>
-              <div class="flex justify-between">
-                <span class="opacity-60">Municipio:</span>
-                <span class="font-medium">{{ selectedItem.municipio }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="opacity-60">Provincia:</span>
-                <span>{{ selectedItem.provincia }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="opacity-60">Departamento:</span>
-                <span class="font-medium">{{ selectedItem.departamento }}</span>
-              </div>
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">Teléfono</div>
+              <a :href="'tel:' + selectedItem.telefono" 
+                 class="font-mono text-sm link link-primary">
+                {{ selectedItem.telefono || 'No registrado' }}
+              </a>
             </div>
-          </div>
-
-          <!-- 🆕 NUEVO: Actas Asignadas -->
-          <div class="bg-base-200 rounded-lg p-4">
-            <div class="flex justify-between items-center mb-3">
-              <h4 class="font-semibold text-sm flex items-center gap-2">
-                <span>📋</span>
-                <span>Actas Asignadas al Recinto</span>
-              </h4>
-              <div class="badge badge-primary badge-sm">
-                {{ operadorActas.length }} actas
-              </div>
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">Correo</div>
+              <a :href="'mailto:' + selectedItem.correo" 
+                 class="text-xs truncate link link-primary">
+                {{ selectedItem.correo || 'No registrado' }}
+              </a>
             </div>
-
-            <!-- Loading state -->
-            <div v-if="loadingActas" class="flex justify-center py-4">
-              <span class="loading loading-spinner loading-sm"></span>
-              <span class="ml-2 text-xs opacity-60">Cargando actas...</span>
-            </div>
-
-            <!-- Empty state -->
-            <div v-else-if="operadorActas.length === 0" class="text-center py-6 opacity-60">
-              <div class="text-3xl mb-2">📄</div>
-              <div class="text-sm">No hay actas registradas en este recinto</div>
-            </div>
-
-            <!-- Lista de actas -->
-            <div v-else class="space-y-2 max-h-60 overflow-y-auto">
-              <div v-for="acta in operadorActas" :key="acta.id"
-                class="flex items-center justify-between p-3 bg-base-100 rounded hover:bg-base-300 transition-colors">
-                <div class="flex-1">
-                  <div class="font-mono text-sm font-semibold">{{ acta.codigo }}</div>
-                  <div class="text-xs opacity-60 mt-1">
-                    Acta ID: {{ acta.id }}
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button @click="copyActaCode(acta.codigo)" class="btn btn-ghost btn-xs" title="Copiar código">
-                    📋
-                  </button>
-                  <button @click="viewActaDetails(acta)" class="btn btn-primary btn-xs" title="Ver detalles">
-                    👁️
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Acciones -->
-          <div class="flex gap-2 justify-end pt-2">
-            <button @click="copyToClipboard(selectedItem)" class="btn btn-sm btn-outline gap-2">
-              <span>📋</span>
-              Copiar información
-            </button>
-            <button @click="exportOperadorCompleto(selectedItem)" class="btn btn-sm btn-primary gap-2">
-              <span>📤</span>
-              Exportar completo
-            </button>
           </div>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+
+      <!-- Info Organizacional -->
+      <div class="card bg-base-200 shadow-sm">
+        <div class="card-body p-3 sm:p-4">
+          <h4 class="font-semibold text-sm mb-2 flex items-center gap-2 text-secondary">
+            <span>🏢</span>
+            <span>Organización</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div class="flex items-center justify-between sm:flex-col sm:items-start">
+              <div class="text-xs opacity-60 mb-1">Tipo</div>
+              <span class="badge badge-lg" :class="selectedItem.tipo_operador === 'rural' ? 'badge-warning' : 'badge-info'">
+                {{ selectedItem.tipo_operador === 'rural' ? '🌾 Rural' : '🏙️ Urbano' }}
+              </span>
+            </div>
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">Cargo</div>
+              <div class="truncate">{{ selectedItem.cargo || 'Operador' }}</div>
+            </div>
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">Grupo</div>
+              <div class="truncate">{{ selectedItem.grupo || 'No asignado' }}</div>
+            </div>
+            <div class="flex flex-col">
+              <div class="text-xs opacity-60 mb-1">Coordinador</div>
+              <div class="truncate">{{ selectedItem.coordinador || 'No asignado' }}</div>
+            </div>
+            <div class="flex flex-col sm:col-span-2">
+              <div class="text-xs opacity-60 mb-1">Jefe</div>
+              <div class="truncate">{{ selectedItem.jefe || 'No asignado' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Ubicación -->
+      <div class="card bg-base-200 shadow-sm">
+        <div class="card-body p-3 sm:p-4">
+          <h4 class="font-semibold text-sm mb-2 flex items-center gap-2 text-accent">
+            <span>📍</span>
+            <span>Ubicación de Trabajo</span>
+          </h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between items-start gap-2">
+              <span class="opacity-60 text-xs flex-shrink-0">Recinto:</span>
+              <span class="font-medium text-right">{{ selectedItem.recinto || 'No asignado' }}</span>
+            </div>
+            <div class="flex justify-between items-start gap-2">
+              <span class="opacity-60 text-xs flex-shrink-0">Asiento:</span>
+              <span class="text-right text-xs">{{ selectedItem.asiento_electoral || 'N/A' }}</span>
+            </div>
+            <div class="divider my-1"></div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div class="opacity-60 mb-1">Municipio</div>
+                <div class="font-medium">{{ selectedItem.municipio }}</div>
+              </div>
+              <div>
+                <div class="opacity-60 mb-1">Provincia</div>
+                <div>{{ selectedItem.provincia }}</div>
+              </div>
+            </div>
+            <div class="text-center pt-2">
+              <div class="badge badge-outline badge-lg">
+                📍 {{ selectedItem.departamento }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actas Asignadas -->
+      <div class="card bg-base-200 shadow-sm">
+        <div class="card-body p-3 sm:p-4">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-semibold text-sm flex items-center gap-2 text-success">
+              <span>📋</span>
+              <span>Actas Asignadas</span>
+            </h4>
+            <div class="badge badge-success badge-sm">
+              {{ operadorActas.length }}
+            </div>
+          </div>
+
+          <!-- Loading state -->
+          <div v-if="loadingActas" class="flex flex-col items-center justify-center py-6">
+            <span class="loading loading-spinner loading-md text-primary"></span>
+            <span class="mt-2 text-xs opacity-60">Cargando actas...</span>
+          </div>
+
+          <!-- Empty state -->
+          <div v-else-if="operadorActas.length === 0" class="text-center py-6">
+            <div class="text-4xl mb-2 opacity-40">📄</div>
+            <div class="text-sm opacity-60">Sin actas registradas</div>
+          </div>
+
+          <!-- Lista de actas (optimizada para móvil) -->
+          <div v-else class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-base-300">
+            <div v-for="acta in operadorActas" :key="acta.id"
+              class="flex items-center gap-2 p-2 bg-base-100 rounded-lg hover:bg-base-300 transition-colors">
+              <span class="text-primary text-lg">📄</span>
+              <span class="badge badge-primary flex-1 justify-start font-mono text-xs sm:text-sm">
+                {{ acta.codigo }}
+              </span>
+              <button @click="copyActaCode(acta.codigo)" 
+                class="btn btn-circle btn-ghost btn-xs"
+                title="Copiar código">
+                📋
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer fijo con acciones -->
+    <div class="sticky bottom-0 bg-base-100 border-t border-base-300 p-3 sm:p-4">
+      <div class="flex flex-col sm:flex-row gap-2 sm:justify-end">
+        <button @click="copyToClipboard(selectedItem)" 
+          class="btn btn-sm sm:btn-md btn-outline gap-2 w-full sm:w-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span class="hidden sm:inline">Copiar información</span>
+          <span class="sm:hidden">Copiar</span>
+        </button>
+        <button @click="exportOperadorCompleto(selectedItem)" 
+          class="btn btn-sm sm:btn-md btn-primary gap-2 w-full sm:w-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span class="hidden sm:inline">Exportar completo</span>
+          <span class="sm:hidden">Exportar</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+  
+  <!-- Backdrop con animación -->
+  <form method="dialog" class="modal-backdrop backdrop-blur-sm bg-black/50">
+    <button>cerrar</button>
+  </form>
+</dialog>
+
+
+
+
 
 
 
@@ -1018,7 +1067,6 @@ const handleKeyboard = (e) => {
   }
 }
 
-
 // Watchers
 watch([searchTerm, filters], () => {
   currentPage.value = 1
@@ -1034,6 +1082,13 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyboard)
 })
 </script>
+
+
+
+
+
+
+
 
 <style scoped>
 .card,
@@ -1093,5 +1148,63 @@ tbody tr:hover {
 .bg-base-100:hover {
   transform: translateX(4px);
   transition: transform 0.2s ease;
+}
+
+
+
+
+
+/* Scrollbar personalizado para navegadores webkit */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: var(--fallback-b3, oklch(var(--b3)));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--fallback-p, oklch(var(--p)));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--fallback-pf, oklch(var(--pf)));
+}
+
+/* Animación suave para el modal */
+dialog.modal[open] .modal-box {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mejoras para táctil */
+@media (hover: none) and (pointer: coarse) {
+  .btn {
+    min-height: 44px; /* Área táctil mínima recomendada */
+  }
+}
+
+/* Optimización para pantallas pequeñas */
+@media (max-width: 640px) {
+  .modal-box {
+    max-width: 100vw;
+    width: 100vw;
+    max-height: 100vh;
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
 }
 </style>
