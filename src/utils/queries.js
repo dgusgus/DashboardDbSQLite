@@ -55,9 +55,7 @@ export const queries = {
       pr.nombre       AS provincia,
       pr.es_urbano    AS provincia_urbana,
       d.nombre        AS departamento,
-      (SELECT COUNT(*) FROM acta a2
-       JOIN persona p2 ON a2.persona_id = p2.id
-       WHERE p2.recinto_id = r.id)  AS actas_en_recinto
+      (SELECT COUNT(*) FROM acta a2 WHERE a2.persona_id = p.id) AS actas_asignadas
     FROM persona p
     LEFT JOIN coordinador c   ON p.coordinador_id = c.id
     LEFT JOIN jefe j          ON c.jefe_id = j.id
@@ -125,6 +123,7 @@ export const queries = {
   `,
 
   // ── RECINTOS ───────────────────────────────────────────────────────
+  // Counts como subqueries para evitar colapso de GROUP BY con múltiples LEFT JOINs
   getAllRecintos: () => `
     SELECT
       r.id,
@@ -132,22 +131,19 @@ export const queries = {
       r.direccion,
       r.distrito,
       CASE WHEN pr.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo,
-      ae.nombre     AS asiento_electoral,
-      m.nombre      AS municipio,
-      pr.nombre     AS provincia,
-      pr.es_urbano  AS provincia_urbana,
-      d.nombre      AS departamento,
-      COUNT(DISTINCT CASE WHEN p.tipo = 'operador' THEN p.id END) AS operadores_asignados,
-      COUNT(DISTINCT CASE WHEN p.tipo = 'notario'  THEN p.id END) AS notarios_asignados,
-      COUNT(DISTINCT a.id)                                         AS actas_registradas
+      ae.nombre    AS asiento_electoral,
+      m.nombre     AS municipio,
+      pr.nombre    AS provincia,
+      pr.es_urbano AS provincia_urbana,
+      d.nombre     AS departamento,
+      (SELECT COUNT(*) FROM persona WHERE recinto_id = r.id AND tipo = 'operador') AS operadores_asignados,
+      (SELECT COUNT(*) FROM persona WHERE recinto_id = r.id AND tipo = 'notario')  AS notarios_asignados,
+      (SELECT COUNT(*) FROM acta a JOIN persona p ON a.persona_id = p.id WHERE p.recinto_id = r.id) AS actas_registradas
     FROM recinto r
     LEFT JOIN asiento_electoral ae ON r.asiento_id = ae.id
-    LEFT JOIN municipio m     ON ae.municipio_id = m.id
-    LEFT JOIN provincia pr    ON m.provincia_id = pr.id
-    LEFT JOIN departamento d  ON pr.departamento_id = d.id
-    LEFT JOIN persona p       ON p.recinto_id = r.id
-    LEFT JOIN acta a          ON a.persona_id = p.id
-    GROUP BY r.id
+    LEFT JOIN municipio m          ON ae.municipio_id = m.id
+    LEFT JOIN provincia pr         ON m.provincia_id = pr.id
+    LEFT JOIN departamento d       ON pr.departamento_id = d.id
     ORDER BY d.nombre, pr.nombre, m.nombre, r.nombre
   `,
 

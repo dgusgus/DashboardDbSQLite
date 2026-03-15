@@ -1,55 +1,81 @@
-<!-- src/views/Recintos.vue - Vista de recintos -->
+<!-- src/views/Recintos.vue -->
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 class="text-3xl font-bold">🏫 Recintos</h1>
-        <p class="text-sm opacity-70">Ubicaciones de trabajo y asignaciones</p>
-      </div>
-      <div class="flex gap-2">
-        <button @click="exportRecintos" class="btn btn-outline">
-          📤 Exportar
-        </button>
-        <button @click="refreshData" class="btn btn-primary" :disabled="loading">
-          <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-          🔄 Actualizar
-        </button>
+  <div>
+    <div class="search-bar">
+      <div class="search-wrap">
+        <input v-model="q" class="search-input" placeholder="Nombre, municipio, provincia…"
+          type="search" autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button v-if="q" class="search-clear" @click="q = ''">✕</button>
       </div>
     </div>
 
-    <!-- Search and Stats -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-      <div class="lg:col-span-2">
-        <SearchBar 
-          v-model="searchTerm" 
-          placeholder="Buscar por nombre, dirección, municipio..."
-          @search="performSearch"
-        />
+    <div class="chips">
+      <button class="chip" :class="{ active: tipo === '' }"       @click="tipo = ''">Todos</button>
+      <button class="chip" :class="{ active: tipo === 'rural' }"  @click="tipo = 'rural'">🌾 Rural</button>
+      <button class="chip" :class="{ active: tipo === 'urbano' }" @click="tipo = 'urbano'">🏙️ Urbano</button>
+      <button class="chip" :class="{ active: sinOp }" @click="sinOp = !sinOp">⚠️ Sin operador</button>
+    </div>
+
+    <p class="list-count">{{ filtered.length }} recintos</p>
+
+    <div class="card-list">
+      <div v-for="r in filtered" :key="r.id" class="person-card" @click="selected = r">
+        <div class="p-avatar av-re">🏫</div>
+        <div class="p-body">
+          <div class="p-name">{{ r.nombre }}</div>
+          <div class="p-sub">{{ r.municipio }} · {{ r.departamento }}</div>
+          <div class="p-tags">
+            <span class="tag" :class="r.tipo === 'rural' ? 'tag-yellow' : 'tag-blue'">{{ r.tipo }}</span>
+            <span class="tag" :class="r.operadores_asignados > 0 ? 'tag-green' : 'tag-red'">
+              {{ r.operadores_asignados }} op.
+            </span>
+            <span v-if="r.actas_registradas > 0" class="tag tag-gray">{{ r.actas_registradas }} actas</span>
+          </div>
+        </div>
+        <span class="p-arrow">›</span>
       </div>
-      <div class="stats shadow bg-base-100 lg:col-span-2">
-        <div class="stat">
-          <div class="stat-title">Total</div>
-          <div class="stat-value text-lg">{{ filteredRecintos.length }}</div>
-          <div class="stat-desc">recintos</div>
-        </div>
-        <div class="stat">
-          <div class="stat-title">Rurales</div>
-          <div class="stat-value text-lg text-warning">{{ recintosRurales }}</div>
-          <div class="stat-desc">ubicaciones</div>
-        </div>
+      <div v-if="filtered.length === 0" class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">Sin resultados</div>
       </div>
     </div>
 
-    <!-- Data Table -->
-    <DataTable 
-      title="Lista de Recintos"
-      :data="filteredRecintos"
-      :columns="recintosColumns"
-      :loading="loading"
-      :page-size="15"
-      @export="exportRecintos"
-    />
+    <Teleport to="body">
+      <div v-if="selected" class="sheet-backdrop" @click.self="selected = null">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-head">
+            <span class="sheet-title">{{ selected.nombre }}</span>
+            <button class="sheet-close" @click="selected = null">✕</button>
+          </div>
+          <div class="sheet-body">
+            <div class="d-section">
+              <div class="d-label">Información</div>
+              <div class="d-row"><span class="d-key">Tipo</span>
+                <span class="d-val"><span class="tag" :class="selected.tipo === 'rural' ? 'tag-yellow' : 'tag-blue'">{{ selected.tipo }}</span></span>
+              </div>
+              <div class="d-row" v-if="selected.direccion"><span class="d-key">Dirección</span><span class="d-val">{{ selected.direccion }}</span></div>
+              <div class="d-row"><span class="d-key">Asiento</span><span class="d-val">{{ selected.asiento_electoral || '—' }}</span></div>
+              <div class="d-row"><span class="d-key">Municipio</span><span class="d-val">{{ selected.municipio }}</span></div>
+              <div class="d-row"><span class="d-key">Provincia</span><span class="d-val">{{ selected.provincia }}</span></div>
+              <div class="d-row"><span class="d-key">Departamento</span><span class="d-val">{{ selected.departamento }}</span></div>
+            </div>
+            <div class="d-section">
+              <div class="d-label">Cobertura</div>
+              <div class="d-row">
+                <span class="d-key">Operadores</span>
+                <span class="d-val"><span class="tag" :class="selected.operadores_asignados > 0 ? 'tag-green' : 'tag-red'">{{ selected.operadores_asignados }}</span></span>
+              </div>
+              <div class="d-row">
+                <span class="d-key">Notarios</span>
+                <span class="d-val"><span class="tag" :class="selected.notarios_asignados > 0 ? 'tag-green' : 'tag-red'">{{ selected.notarios_asignados }}</span></span>
+              </div>
+              <div class="d-row"><span class="d-key">Actas</span><span class="d-val">{{ selected.actas_registradas }}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -57,86 +83,28 @@
 import { ref, computed, onMounted } from 'vue'
 import { useDatabase } from '@/composables/useDatabase.js'
 import { queries } from '@/utils/queries.js'
-import SearchBar from '@/components/SearchBar.vue'
-import DataTable from '@/components/DataTable.vue'
 
 const { query } = useDatabase()
+const all      = ref([])
+const q        = ref('')
+const tipo     = ref('')
+const sinOp    = ref(false)
+const selected = ref(null)
 
-// Estado
-const recintos = ref([])
-const loading = ref(false)
-const searchTerm = ref('')
+onMounted(() => { all.value = query(queries.getAllRecintos()) })
 
-// Configuración de columnas
-const recintosColumns = [
-  { key: 'nombre', title: 'Nombre', type: 'text' },
-  { key: 'direccion', title: 'Dirección', type: 'text' },
-  { key: 'tipo', title: 'Tipo', type: 'badge' },
-  { key: 'municipio', title: 'Municipio', type: 'text' },
-  { key: 'provincia', title: 'Provincia', type: 'text' },
-  { key: 'departamento', title: 'Departamento', type: 'text' },
-  { key: 'operadores_asignados', title: 'Operadores', type: 'text' },
-  { key: 'asiento_electoral', title: 'Asiento Electoral', type: 'text' }
-]
-
-// Computed
-const filteredRecintos = computed(() => {
-  if (!searchTerm.value) return recintos.value
-
-  const term = searchTerm.value.toLowerCase()
-  return recintos.value.filter(recinto => 
-    recinto.nombre?.toLowerCase().includes(term) ||
-    recinto.direccion?.toLowerCase().includes(term) ||
-    recinto.municipio?.toLowerCase().includes(term) ||
-    recinto.provincia?.toLowerCase().includes(term) ||
-    recinto.departamento?.toLowerCase().includes(term)
+const filtered = computed(() => {
+  let data = all.value
+  if (tipo.value) data = data.filter(r => r.tipo === tipo.value)
+  if (sinOp.value) data = data.filter(r => r.operadores_asignados === 0)
+  if (!q.value)   return data
+  const t = q.value.toLowerCase()
+  return data.filter(r =>
+    r.nombre?.toLowerCase().includes(t) ||
+    r.municipio?.toLowerCase().includes(t) ||
+    r.provincia?.toLowerCase().includes(t) ||
+    r.departamento?.toLowerCase().includes(t) ||
+    r.asiento_electoral?.toLowerCase().includes(t)
   )
-})
-
-const recintosRurales = computed(() => {
-  return recintos.value.filter(r => r.tipo === 'rural').length
-})
-
-// Métodos
-const loadRecintos = async () => {
-  loading.value = true
-  try {
-    recintos.value = query(queries.getAllRecintos())
-  } catch (error) {
-    console.error('Error cargando recintos:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const performSearch = (term) => {
-  searchTerm.value = term
-}
-
-const refreshData = () => {
-  loadRecintos()
-}
-
-const exportRecintos = (data = null) => {
-  const dataToExport = data || filteredRecintos.value
-  const headers = recintosColumns.map(col => col.title).join(',')
-  const rows = dataToExport.map(row => 
-    recintosColumns.map(col => row[col.key] || '').join(',')
-  )
-  
-  const csvContent = [headers, ...rows].join('\n')
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  link.setAttribute('href', url)
-  link.setAttribute('download', `recintos_${new Date().toISOString().split('T')[0]}.csv`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-
-onMounted(() => {
-  loadRecintos()
 })
 </script>
