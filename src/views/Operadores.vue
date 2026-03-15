@@ -836,20 +836,16 @@ const viewDetails = async (item) => {
 
 // 🆕 NUEVO: Método para cargar actas
 const loadOperadorActas = async (recintoId) => {
-  if (!recintoId) {
-    operadorActas.value = []
-    return
-  }
-
+  if (!recintoId) { operadorActas.value = []; return }
   loadingActas.value = true
   try {
     const actas = query(`
-      SELECT id, codigo
-      FROM acta
-      WHERE recinto_id = ?
-      ORDER BY codigo
+      SELECT a.id, a.codigo
+      FROM acta a
+      JOIN persona p ON a.persona_id = p.id
+      WHERE p.recinto_id = ?
+      ORDER BY a.codigo
     `, [recintoId])
-    console.log('Actas cargadas:', actas)
     operadorActas.value = actas
   } catch (error) {
     console.error('Error cargando actas:', error)

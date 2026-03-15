@@ -201,14 +201,15 @@ const pageSize = 20
 
 // Configuración de columnas
 const actasColumns = [
-  { key: 'codigo', title: '📋 Código', type: 'text' },
-  { key: 'recinto', title: '🏫 Recinto', type: 'text' },
+  { key: 'codigo',            title: '📋 Código',           type: 'text' },
+  { key: 'operador',          title: '👷 Operador',          type: 'text' },
+  { key: 'operador_ci',       title: '🪪 CI Operador',       type: 'text' },
+  { key: 'grupo',             title: '👥 Grupo',             type: 'text' },
+  { key: 'recinto',           title: '🏫 Recinto',           type: 'text' },
   { key: 'asiento_electoral', title: '🗳️ Asiento Electoral', type: 'text' },
-  { key: 'municipio', title: '🏙️ Municipio', type: 'text' },
-  { key: 'provincia', title: '🗺️ Provincia', type: 'text' },
-  { key: 'departamento', title: '📍 Departamento', type: 'text' },
-  { key: 'operadores', title: '👷 Operadores', type: 'text' },
-  { key: 'notarios', title: '📝 Notarios', type: 'text' }
+  { key: 'municipio',         title: '🏙️ Municipio',         type: 'text' },
+  { key: 'departamento',      title: '📍 Departamento',      type: 'text' },
+  { key: 'tipo_zona',         title: '🏷️ Tipo',              type: 'badge' },
 ]
 
 // Computed
@@ -277,13 +278,8 @@ const porcentajeRecintos = computed(() => {
 })
 
 const operadoresActivos = computed(() => {
-  const operadores = new Set()
-  actas.value.forEach(acta => {
-    if (acta.operadores) {
-      acta.operadores.split(',').forEach(op => operadores.add(op.trim()))
-    }
-  })
-  return operadores.size
+  const ops = new Set(actas.value.map(a => a.operador_ci).filter(Boolean))
+  return ops.size
 })
 
 const notariosActivos = computed(() => {

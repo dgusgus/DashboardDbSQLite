@@ -1,4 +1,6 @@
-// src/utils/database.js - ACTUALIZADO: stats inferidas sin campo 'tipo'
+// src/utils/database.js
+// ✅ Actualizado para BD v2: tabla 'persona' unificada, sin 'grupo' separado
+
 class DatabaseManager {
   constructor() {
     this.db = null
@@ -10,52 +12,41 @@ class DatabaseManager {
 
   async initialize() {
     console.log('🚀 Inicializando base de datos...')
-    
     try {
-      // Cargar sql.js desde CDN como fallback
       if (!window.initSqlJs) {
         await this.loadSqlJsFromCDN()
       }
-      
-      // Inicializar SQL.js
       this.SQL = await window.initSqlJs({
         locateFile: file => {
-          if (file === 'sql-wasm.wasm') {
-            return '/sql-wasm.wasm'
-          }
+          if (file === 'sql-wasm.wasm') return '/sql-wasm.wasm'
           return `https://sql.js.org/dist/${file}`
         }
       })
-      
       console.log('✅ SQL.js inicializado')
-      
-      // Cargar base de datos con retry automático
+
       const arrayBuffer = await this.loadDatabaseWithRetry()
-      
       console.log(`📊 BD cargada: ${arrayBuffer.byteLength} bytes`)
       this.dbSize = arrayBuffer.byteLength
       this.lastUpdate = new Date()
-      
+
       if (arrayBuffer.byteLength < 1000) {
         throw new Error('La base de datos parece estar vacía o corrupta')
       }
-      
+
       this.db = new this.SQL.Database(new Uint8Array(arrayBuffer))
       this.isLoaded = true
-      
-      // Test completo de la BD
+
       const validation = this.validateDatabase()
       if (!validation.valid) {
         throw new Error(`BD inválida: ${validation.error}`)
       }
-      
-      console.log('✅ Base de datos validada exitosamente')
+
+      console.log('✅ Base de datos validada')
       console.log(`📋 Tablas: ${validation.tableCount}, Registros: ${validation.totalRecords}`)
-      
       return true
-      
+
     } catch (error) {
-      console.error('❌ Error detallado:', error)
+      console.error('❌ Error:', error)
       throw error
     }
   }
@@ -65,22 +56,13 @@ class DatabaseManager {
       try {
         const response = await fetch('/operadores.db', {
           cache: 'no-cache',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          headers: { 'Cache-Control': 'no-cache' }
         })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-        
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         return await response.arrayBuffer()
-        
       } catch (error) {
         console.warn(`⚠️ Intento ${i + 1}/${maxRetries} falló:`, error.message)
-        
         if (i === maxRetries - 1) throw error
-        
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)))
       }
     }
@@ -96,18 +78,22 @@ class DatabaseManager {
     })
   }
 
+  // ✅ Tablas esperadas en BD v2
   validateDatabase() {
     try {
       const tables = this.query("SELECT name FROM sqlite_master WHERE type='table'")
-      const expectedTables = [
-        'operador', 'recinto', 'coordinador', 'grupo', 'jefe',
-        'departamento', 'provincia', 'municipio', 'asiento_electoral',
-        'notario', 'acta', 'cuenta'
-      ]
-      
       const tableNames = tables.map(t => t.name)
-      const missingTables = expectedTables.filter(t => !tableNames.includes(t))
-      
+
+      // Tablas requeridas en la BD v2
+      const requiredTables = [
+        'jefe', 'coordinador',
+        'departamento', 'provincia', 'municipio',
+        'asiento_electoral', 'recinto',
+        'persona', 'acta'
+      ]
+
+      const missingTables = requiredTables.filter(t => !tableNames.includes(t))
+
       if (missingTables.length > 0) {
         return {
           valid: false,
@@ -118,241 +104,193 @@ class DatabaseManager {
       }
 
       let totalRecords = 0
-      for (const table of expectedTables) {
+      for (const table of requiredTables) {
         try {
           const count = this.queryFirst(`SELECT COUNT(*) as count FROM ${table}`)
           totalRecords += count?.count || 0
-        } catch (error) {
-          console.warn(`⚠️ Error contando ${table}:`, error)
+        } catch (e) {
+          console.warn(`⚠️ Error contando ${table}:`, e)
         }
       }
 
-      return {
-        valid: true,
-        tableCount: tables.length,
-        totalRecords,
-        expectedTables,
-        availableTables: tableNames
-      }
-      
+      return { valid: true, tableCount: tables.length, totalRecords }
+
     } catch (error) {
-      return {
-        valid: false,
-        error: error.message,
-        tableCount: 0
-      }
+      return { valid: false, error: error.message, tableCount: 0 }
     }
   }
 
   testConnection() {
-    if (!this.isLoaded) {
-      return { connected: false, error: 'Base de datos no inicializada' }
-    }
-    
+    if (!this.isLoaded) return { connected: false, error: 'BD no inicializada' }
     try {
       const validation = this.validateDatabase()
-      const systemInfo = {
-        dbSize: `${(this.dbSize / 1024).toFixed(1)} KB`,
-        lastUpdate: this.lastUpdate?.toLocaleString() || 'Desconocido',
-        sqliteVersion: this.queryFirst("SELECT sqlite_version() as version")?.version
-      }
-      
-      return { 
-        connected: true, 
+      return {
+        connected: true,
         error: null,
         validation,
-        systemInfo
+        systemInfo: {
+          dbSize: `${(this.dbSize / 1024).toFixed(1)} KB`,
+          lastUpdate: this.lastUpdate?.toLocaleString() || 'Desconocido',
+          sqliteVersion: this.queryFirst("SELECT sqlite_version() as version")?.version
+        }
       }
     } catch (error) {
       return { connected: false, error: error.message }
     }
   }
 
-  // 📊 ACTUALIZADO: Estadísticas inferidas (sin campo 'tipo' directo)
+  // ✅ Estadísticas usando estructura v2
   getStats() {
-    const tables = [
-      'operador', 'recinto', 'coordinador', 'grupo', 'jefe',
-      'departamento', 'provincia', 'municipio', 'asiento_electoral',
-      'notario', 'acta', 'cuenta'
-    ]
-    
     const stats = {}
+
+    const tableCounts = [
+      'jefe', 'coordinador', 'departamento', 'provincia',
+      'municipio', 'asiento_electoral', 'recinto', 'acta'
+    ]
+
     let totalRecords = 0
-    
-    for (const table of tables) {
+    for (const table of tableCounts) {
       try {
         const result = this.queryFirst(`SELECT COUNT(*) as count FROM ${table}`)
-        const count = result ? result.count : 0
-        stats[table] = count
-        totalRecords += count
-      } catch (error) {
+        stats[table] = result?.count || 0
+        totalRecords += stats[table]
+      } catch {
         stats[table] = 0
       }
     }
-    
-    stats.total = totalRecords
-    stats.dbSize = this.dbSize
-    stats.lastUpdate = this.lastUpdate
-    
-    // 📊 ESTADÍSTICAS ESPECÍFICAS INFERIDAS
+
+    // Personas separadas por tipo
     try {
-      // Operadores rurales: distrito = 0
+      stats.persona            = this.queryFirst(`SELECT COUNT(*) as c FROM persona`)?.c || 0
+      stats.operador           = this.queryFirst(`SELECT COUNT(*) as c FROM persona WHERE tipo = 'operador'`)?.c || 0
+      stats.notario            = this.queryFirst(`SELECT COUNT(*) as c FROM persona WHERE tipo = 'notario'`)?.c || 0
+      stats.cuentas            = this.queryFirst(`SELECT COUNT(*) as c FROM persona WHERE user IS NOT NULL`)?.c || 0
+
+      // Rural/urbano inferido desde provincia.es_urbano
       stats.operadores_rurales = this.queryFirst(`
-        SELECT COUNT(*) as count 
-        FROM operador o 
-        JOIN recinto r ON o.recinto_id = r.id 
-        WHERE r.distrito = 0
-      `)?.count || 0
-      
-      // Operadores urbanos: distrito > 0
+        SELECT COUNT(*) as c FROM persona p
+        JOIN recinto r ON p.recinto_id = r.id
+        JOIN asiento_electoral ae ON r.asiento_id = ae.id
+        JOIN municipio m ON ae.municipio_id = m.id
+        JOIN provincia pr ON m.provincia_id = pr.id
+        WHERE p.tipo = 'operador' AND pr.es_urbano = 0
+      `)?.c || 0
+
       stats.operadores_urbanos = this.queryFirst(`
-        SELECT COUNT(*) as count 
-        FROM operador o 
-        JOIN recinto r ON o.recinto_id = r.id 
-        WHERE r.distrito > 0
-      `)?.count || 0
-      
-      // Recintos rurales
-      stats.recintos_rurales = this.queryFirst(`
-        SELECT COUNT(*) as count FROM recinto WHERE distrito = 0
-      `)?.count || 0
-      
-      // Recintos urbanos
-      stats.recintos_urbanos = this.queryFirst(`
-        SELECT COUNT(*) as count FROM recinto WHERE distrito > 0
-      `)?.count || 0
-      
-      // Notarios rurales
-      stats.notarios_rurales = this.queryFirst(`
-        SELECT COUNT(*) as count 
-        FROM notario n 
-        JOIN recinto r ON n.recinto_id = r.id 
-        WHERE r.distrito = 0
-      `)?.count || 0
-      
-      // Notarios urbanos
-      stats.notarios_urbanos = this.queryFirst(`
-        SELECT COUNT(*) as count 
-        FROM notario n 
-        JOIN recinto r ON n.recinto_id = r.id 
-        WHERE r.distrito > 0
-      `)?.count || 0
-      
-    } catch (error) {
-      console.warn('⚠️ Error obteniendo estadísticas específicas:', error)
+        SELECT COUNT(*) as c FROM persona p
+        JOIN recinto r ON p.recinto_id = r.id
+        JOIN asiento_electoral ae ON r.asiento_id = ae.id
+        JOIN municipio m ON ae.municipio_id = m.id
+        JOIN provincia pr ON m.provincia_id = pr.id
+        WHERE p.tipo = 'operador' AND pr.es_urbano = 1
+      `)?.c || 0
+
+      stats.recintos_rurales   = this.queryFirst(`
+        SELECT COUNT(DISTINCT r.id) as c FROM recinto r
+        JOIN asiento_electoral ae ON r.asiento_id = ae.id
+        JOIN municipio m ON ae.municipio_id = m.id
+        JOIN provincia pr ON m.provincia_id = pr.id
+        WHERE pr.es_urbano = 0
+      `)?.c || 0
+
+      stats.recintos_urbanos   = this.queryFirst(`
+        SELECT COUNT(DISTINCT r.id) as c FROM recinto r
+        JOIN asiento_electoral ae ON r.asiento_id = ae.id
+        JOIN municipio m ON ae.municipio_id = m.id
+        JOIN provincia pr ON m.provincia_id = pr.id
+        WHERE pr.es_urbano = 1
+      `)?.c || 0
+
+      totalRecords += stats.persona + stats.acta
+    } catch (e) {
+      console.warn('⚠️ Error stats específicas:', e)
     }
-    
+
+    stats.total      = totalRecords
+    stats.dbSize     = this.dbSize
+    stats.lastUpdate = this.lastUpdate
     return stats
   }
 
+  // ✅ Búsqueda global usando tabla persona
   searchGlobal(term, limit = 20) {
     if (!term || term.length < 2) return []
-    
-    const searchTerm = `%${term.toLowerCase()}%`
-    
+    const s = `%${term.toLowerCase()}%`
     try {
-      const results = this.query(`
-        SELECT 'operador' as tipo, o.id, o.nombre as titulo, o.ci as subtitulo,
-               COALESCE(g.nombre, 'Sin grupo') || ' | ' || COALESCE(r.nombre, 'Sin recinto') as descripcion
-        FROM operador o
-        LEFT JOIN grupo g ON o.grupo_id = g.id
-        LEFT JOIN recinto r ON o.recinto_id = r.id
-        WHERE o.nombre LIKE ? OR o.ci LIKE ?
-        
+      return this.query(`
+        SELECT 'operador' as tipo, p.id,
+               p.nombre as titulo, p.ci as subtitulo,
+               COALESCE(c.nombre_grupo, 'Sin grupo') || ' | ' || COALESCE(r.nombre, 'Sin recinto') as descripcion
+        FROM persona p
+        LEFT JOIN coordinador c ON p.coordinador_id = c.id
+        LEFT JOIN recinto r ON p.recinto_id = r.id
+        WHERE p.tipo = 'operador' AND (p.nombre LIKE ? OR p.ci LIKE ?)
+
         UNION ALL
-        
-        SELECT 'notario' as tipo, n.id, n.nombre as titulo, n.ci as subtitulo,
+
+        SELECT 'notario' as tipo, p.id,
+               p.nombre as titulo, p.ci as subtitulo,
                COALESCE(r.nombre, 'Sin recinto') as descripcion
-        FROM notario n
-        LEFT JOIN recinto r ON n.recinto_id = r.id
-        WHERE n.nombre LIKE ? OR n.ci LIKE ?
-        
+        FROM persona p
+        LEFT JOIN recinto r ON p.recinto_id = r.id
+        WHERE p.tipo = 'notario' AND (p.nombre LIKE ? OR p.ci LIKE ?)
+
         UNION ALL
-        
-        SELECT 'recinto' as tipo, r.id, r.nombre as titulo, r.direccion as subtitulo,
+
+        SELECT 'recinto' as tipo, r.id,
+               r.nombre as titulo, r.direccion as subtitulo,
                COALESCE(ae.nombre, 'Sin asiento') as descripcion
         FROM recinto r
         LEFT JOIN asiento_electoral ae ON r.asiento_id = ae.id
         WHERE r.nombre LIKE ? OR r.direccion LIKE ?
-        
+
         UNION ALL
-        
-        SELECT 'acta' as tipo, a.id, a.codigo as titulo, r.nombre as subtitulo,
+
+        SELECT 'acta' as tipo, a.id,
+               a.codigo as titulo,
+               COALESCE(r.nombre, 'Sin recinto') as subtitulo,
                COALESCE(m.nombre, 'Sin municipio') as descripcion
         FROM acta a
-        LEFT JOIN recinto r ON a.recinto_id = r.id
+        JOIN persona p ON a.persona_id = p.id
+        LEFT JOIN recinto r ON p.recinto_id = r.id
         LEFT JOIN asiento_electoral ae ON r.asiento_id = ae.id
         LEFT JOIN municipio m ON ae.municipio_id = m.id
         WHERE a.codigo LIKE ?
-        
+
         LIMIT ?
-      `, [
-        searchTerm, searchTerm, // operador
-        searchTerm, searchTerm, // notario
-        searchTerm, searchTerm, // recinto
-        searchTerm,             // acta
-        limit
-      ])
-      
-      return results
-      
-    } catch (error) {
-      console.error('❌ Error en búsqueda global:', error)
+      `, [s, s, s, s, s, s, s, limit])
+    } catch (e) {
+      console.error('❌ Error búsqueda global:', e)
       return []
     }
   }
 
   async reload() {
-    try {
-      console.log('🔄 Recargando base de datos...')
-      
-      const arrayBuffer = await this.loadDatabaseWithRetry()
-      
-      if (this.db) {
-        this.db.close()
-      }
-      
-      this.db = new this.SQL.Database(new Uint8Array(arrayBuffer))
-      this.dbSize = arrayBuffer.byteLength
-      this.lastUpdate = new Date()
-      
-      const validation = this.validateDatabase()
-      if (!validation.valid) {
-        throw new Error(`BD inválida: ${validation.error}`)
-      }
-      
-      console.log('✅ Base de datos recargada exitosamente')
-      return true
-      
-    } catch (error) {
-      console.error('❌ Error recargando BD:', error)
-      throw error
-    }
+    console.log('🔄 Recargando BD...')
+    const arrayBuffer = await this.loadDatabaseWithRetry()
+    if (this.db) this.db.close()
+    this.db = new this.SQL.Database(new Uint8Array(arrayBuffer))
+    this.dbSize = arrayBuffer.byteLength
+    this.lastUpdate = new Date()
+    const validation = this.validateDatabase()
+    if (!validation.valid) throw new Error(`BD inválida: ${validation.error}`)
+    console.log('✅ BD recargada')
+    return true
   }
 
   query(sql, params = []) {
-    if (!this.isLoaded) {
-      throw new Error('BD no inicializada')
-    }
-
+    if (!this.isLoaded) throw new Error('BD no inicializada')
     try {
       const results = this.db.exec(sql, params)
-      
       if (results.length === 0) return []
-      
-      const columns = results[0].columns
-      const values = results[0].values
-      
+      const { columns, values } = results[0]
       return values.map(row => {
         const obj = {}
-        columns.forEach((col, index) => {
-          obj[col] = row[index]
-        })
+        columns.forEach((col, i) => { obj[col] = row[i] })
         return obj
       })
-      
     } catch (error) {
-      console.error('❌ Error SQL:', sql, error)
+      console.error('❌ Error SQL:', sql.slice(0, 80), error)
       throw error
     }
   }
