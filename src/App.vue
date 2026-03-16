@@ -332,6 +332,16 @@ body {
   font-size: 0.75rem; font-family: monospace; color: var(--text);
 }
 
+.share-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--accent); width: 30px; height: 30px;
+  border-radius: 50%; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.share-btn:active { background: var(--accent); color: #fff; }
+
 @keyframes spin    { to { transform: rotate(360deg) } }
 @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }

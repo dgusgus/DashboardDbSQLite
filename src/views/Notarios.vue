@@ -42,7 +42,10 @@
           <div class="sheet-handle"></div>
           <div class="sheet-head">
             <span class="sheet-title">{{ selected.nombre }}</span>
-            <button class="sheet-close" @click="selected = null">✕</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="share-btn" @click="share(formatNotario(selected), selected.nombre)" title="Compartir">⬆️</button>
+              <button class="sheet-close" @click="selected = null">✕</button>
+            </div>
           </div>
           <div class="sheet-body">
             <a v-if="selected.telefono" :href="`tel:${selected.telefono}`" class="call-btn">
@@ -80,9 +83,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useDatabase } from '@/composables/useDatabase.js'
+import { useShare } from '@/composables/useShare.js'
 import { queries } from '@/utils/queries.js'
 
 const { query } = useDatabase()
+const { share, formatNotario } = useShare()
 const all      = ref([])
 const q        = ref('')
 const tipo     = ref('')

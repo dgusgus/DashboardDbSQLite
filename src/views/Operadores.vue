@@ -64,7 +64,10 @@
           <div class="sheet-handle"></div>
           <div class="sheet-head">
             <span class="sheet-title">{{ selected.nombre }}</span>
-            <button class="sheet-close" @click="selected = null">✕</button>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="share-btn" @click="shareSelected" title="Compartir">⬆️</button>
+              <button class="sheet-close" @click="selected = null">✕</button>
+            </div>
           </div>
           <div class="sheet-body">
 
@@ -137,9 +140,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useDatabase } from '@/composables/useDatabase.js'
+import { useShare } from '@/composables/useShare.js'
 import { queries } from '@/utils/queries.js'
 
 const { query } = useDatabase()
+const { share, formatOperador } = useShare()
 
 const all      = ref([])
 const q        = ref('')
@@ -168,9 +173,13 @@ const filtered = computed(() => {
 
 function open(op) {
   selected.value = op
-  // acta.persona_id apunta al operador específico, no al recinto
   actas.value = op.id
     ? query(`SELECT a.id, a.codigo FROM acta a WHERE a.persona_id = ? ORDER BY a.codigo`, [op.id])
     : []
+}
+
+function shareSelected() {
+  const texto = formatOperador(selected.value, actas.value)
+  share(texto, selected.value.nombre)
 }
 </script>
