@@ -16,9 +16,10 @@ class DatabaseManager {
       if (!window.initSqlJs) {
         await this.loadSqlJsFromCDN()
       }
+      // ✅ CORRECTO — usa BASE_URL de Vite
       this.SQL = await window.initSqlJs({
         locateFile: file => {
-          if (file === 'sql-wasm.wasm') return '/sql-wasm.wasm'
+          if (file === 'sql-wasm.wasm') return `${import.meta.env.BASE_URL}sql-wasm.wasm`
           return `https://sql.js.org/dist/${file}`
         }
       })
