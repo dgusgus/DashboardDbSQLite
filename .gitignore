@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-.vscode
 pnpm-lock.yaml
-public/*
+
+# NO ignorar public/ — esos archivos son necesarios para el build
+# public/*   ← esta línea era el problema, la eliminamos
