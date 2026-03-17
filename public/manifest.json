@@ -6,7 +6,7 @@
   "background_color": "#ffffff",
   "display": "standalone",
   "scope": "/DashboardDbSQLite/",
-  "start_url": "/DashboardDbSQLite/operadores",
+  "start_url": "/DashboardDbSQLite/",
   "orientation": "portrait-primary",
   "icons": [
     {
