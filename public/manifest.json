@@ -5,8 +5,8 @@
   "theme_color": "#3b82f6",
   "background_color": "#ffffff",
   "display": "standalone",
-  "scope": "/",
-  "start_url": "/",
+  "scope": "/DashboardDbSQLite/",
+  "start_url": "/DashboardDbSQLite/operadores",
   "orientation": "portrait-primary",
   "icons": [
     {
