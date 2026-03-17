@@ -54,7 +54,8 @@ class DatabaseManager {
   async loadDatabaseWithRetry(maxRetries = 3) {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const response = await fetch('/operadores.db', {
+        const BASE = import.meta.env.BASE_URL   // ya configurado en vite.config.js
+        const response = await fetch(`${BASE}operadores.db`, {
           cache: 'no-cache',
           headers: { 'Cache-Control': 'no-cache' }
         })
