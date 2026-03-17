@@ -1,64 +1,85 @@
-// vite.config.js - CONFIGURADO PARA RED LOCAL
+// vite.config.js
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  // vite.config.js — agregar esta línea al defineConfig:
+  base: process.env.NODE_ENV === 'production' ? '/DashboardDbSQLite/' : '/',
+  plugins: [
+    vue(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      
+      // ⭐ Esto precachea TODO al instalar, incluyendo la BD
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,db}'],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB máx por archivo
+        
+        // Estrategia offline-first para la BD SQLite
+        runtimeCaching: [
+          {
+            urlPattern: /\.db$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'database-cache',
+              expiration: { maxEntries: 1, maxAgeSeconds: 7 * 24 * 60 * 60 }
+            }
+          },
+          {
+            urlPattern: /\.wasm$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'wasm-cache' }
+          }
+        ]
+      },
+      
+      // Manifest de la app (lo que el celular usa para "instalar")
+      manifest: {
+        name: 'Sistema de Consultas Electoral',
+        short_name: 'Consultas',
+        description: 'Consulta operadores, notarios y recintos electorales',
+        theme_color: '#0f1117',
+        background_color: '#0f1117',
+        display: 'standalone',        // ← Sin barra del navegador
+        orientation: 'portrait',
+        start_url: '/operadores',
+        scope: '/',
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+        ]
+      }
+    })
+  ],
   
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+    alias: { '@': resolve(__dirname, 'src') }
   },
 
-  // ⭐ CONFIGURACIÓN PARA RED LOCAL
   server: {
-    host: true, // ← Esto permite conexiones desde otros dispositivos
-    port: 5173, // Puerto por defecto (puedes cambiarlo)
-    strictPort: false, // Si el puerto está ocupado, usa otro
-    
-    // Configuración CORS para evitar problemas
-    cors: true,
-    
-    // Opcional: Abrir navegador automáticamente
-    open: false,
-    
-    // Configuración para servir archivos WASM
-    fs: {
-      allow: ['..', './node_modules/sql.js']
-    },
-    
+    host: true,
+    port: 5173,
     headers: {
       'Cross-Origin-Embedder-Policy': 'credentialless',
       'Cross-Origin-Opener-Policy': 'same-origin'
     }
   },
 
-  // Configuración para sql.js
-  optimizeDeps: {
-    exclude: ['sql.js'],
-    include: []
-  },
+  optimizeDeps: { exclude: ['sql.js'] },
 
-  // Configuración de build
   build: {
     rollupOptions: {
-      output: {
-        manualChunks: {
-          'sql.js': ['sql.js']
-        }
-      }
+      output: { manualChunks: { 'sql.js': ['sql.js'] } }
     },
-    assetsInlineLimit: 0,
-    copyPublicDir: true
+    assetsInlineLimit: 0
   },
 
-  define: {
-    global: 'globalThis',
-  },
-
+  define: { global: 'globalThis' },
   publicDir: 'public',
   assetsInclude: ['**/*.wasm']
 })
