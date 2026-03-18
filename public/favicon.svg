@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Fondo redondeado -->
+  <rect width="512" height="512" rx="112" fill="#1a1d27"/>
+  <!-- Tarjeta interior -->
+  <rect x="76" y="88" width="360" height="336" rx="40" fill="#22263a" stroke="#4f8ef7" stroke-width="10"/>
+  <!-- Línea 1 — azul (dato principal) -->
+  <line x1="150" y1="192" x2="362" y2="192" stroke="#4f8ef7" stroke-width="22" stroke-linecap="round"/>
+  <!-- Línea 2 — gris claro -->
+  <line x1="150" y1="256" x2="362" y2="256" stroke="#8b90a7" stroke-width="16" stroke-linecap="round"/>
+  <!-- Línea 3 — gris claro corta -->
+  <line x1="150" y1="318" x2="280" y2="318" stroke="#8b90a7" stroke-width="16" stroke-linecap="round"/>
+</svg>

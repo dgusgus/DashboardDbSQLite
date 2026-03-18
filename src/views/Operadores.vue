@@ -1,4 +1,5 @@
 <!-- src/views/Operadores.vue -->
+<!-- ✅ MEJORAS: debounce 250ms, virtual scroll, búsqueda grupo por token, notario en detalle -->
 <template>
   <div>
     <!-- Búsqueda -->

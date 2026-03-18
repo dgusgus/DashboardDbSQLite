@@ -6,20 +6,16 @@ import { resolve } from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  // vite.config.js — agregar esta línea al defineConfig:
   base: process.env.NODE_ENV === 'production' ? '/DashboardDbSQLite/' : '/',
   plugins: [
     vue(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      
-      // ⭐ Esto precachea TODO al instalar, incluyendo la BD
+
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,db}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB máx por archivo
-        
-        // Estrategia offline-first para la BD SQLite
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /\.db$/,
@@ -36,27 +32,28 @@ export default defineConfig({
           }
         ]
       },
-      
-      // Manifest de la app (lo que el celular usa para "instalar")
+
       manifest: {
         name: 'Sistema de Consultas Electoral',
         short_name: 'Consultas',
         description: 'Consulta operadores, notarios y recintos electorales',
         theme_color: '#0f1117',
         background_color: '#0f1117',
-        display: 'standalone',        // ← Sin barra del navegador
+        display: 'standalone',
         orientation: 'portrait',
         start_url: '/DashboardDbSQLite/',
         scope: '/DashboardDbSQLite/',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+          // ✅ CORREGIDO: rutas relativas (sin "/" al inicio)
+          // Vite las resuelve contra base automáticamente
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       }
     })
   ],
-  
+
   resolve: {
     alias: { '@': resolve(__dirname, 'src') }
   },

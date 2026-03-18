@@ -12,20 +12,21 @@
     "icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
+    "pinia": "^3.0.3",
     "vue": "^3.5.21",
-    "vue-router": "^4.5.1",
-    "pinia": "^3.0.3"
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.1",
+    "@heroicons/vue": "^2.2.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.1.13",
-    "tailwindcss": "^4.1.13",
-    "daisyui": "^5.1.18",
-    "vite": "^7.1.7",
-    "vite-plugin-pwa": "^0.21.0",
-    "sql.js": "^1.13.0",
-    "lucide-vue-next": "^0.544.0",
+    "@vitejs/plugin-vue": "^6.0.1",
     "@vueuse/core": "^13.9.0",
-    "@heroicons/vue": "^2.2.0"
+    "daisyui": "^5.1.18",
+    "lucide-vue-next": "^0.544.0",
+    "sql.js": "^1.13.0",
+    "tailwindcss": "^4.1.13",
+    "vite": "^7.1.7",
+    "vite-plugin-pwa": "^0.21.0"
   }
 }
