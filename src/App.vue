@@ -1,4 +1,4 @@
-<!-- src/App.vue — Mobile-first, navegación inferior -->
+<!-- src/App.vue — Sistema de temas + navegación inferior -->
 <template>
   <div id="app" class="app-shell">
 
@@ -21,7 +21,46 @@
     <template v-else>
       <header class="app-header">
         <span class="app-title">{{ currentTitle }}</span>
-        <span class="app-badge">{{ totalRecords.toLocaleString() }} reg.</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="app-badge">{{ totalRecords.toLocaleString() }} reg.</span>
+
+          <!-- Botón selector de tema -->
+          <button class="theme-toggle-btn" @click="themeMenuOpen = !themeMenuOpen" :title="currentTheme.label">
+            <span style="font-size:14px;line-height:1;">{{ currentTheme.emoji }}</span>
+          </button>
+        </div>
+
+        <!-- Menú de temas -->
+        <Teleport to="body">
+          <div v-if="themeMenuOpen" class="theme-backdrop" @click="themeMenuOpen = false">
+            <div class="theme-menu" @click.stop>
+              <div class="theme-menu-title">Tema de color</div>
+              <div class="theme-grid">
+                <button
+                  v-for="t in themes"
+                  :key="t.id"
+                  class="theme-option"
+                  :class="{ active: activeTheme === t.id }"
+                  @click="applyTheme(t.id)"
+                >
+                  <div class="theme-preview" :style="{
+                    background: t.bg,
+                    borderColor: activeTheme === t.id ? t.accent : 'transparent'
+                  }">
+                    <div class="tp-bar" :style="{ background: t.surface }">
+                      <div class="tp-dot" :style="{ background: t.accent }"></div>
+                    </div>
+                    <div class="tp-line" :style="{ background: t.surface }"></div>
+                    <div class="tp-line short" :style="{ background: t.surface }"></div>
+                  </div>
+                  <span class="theme-name" :style="{ color: activeTheme === t.id ? t.accent : 'var(--text2)' }">
+                    {{ t.emoji }} {{ t.label }}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Teleport>
       </header>
 
       <main class="app-main">
@@ -47,7 +86,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDatabase } from '@/composables/useDatabase.js'
 
@@ -69,7 +108,135 @@ const titleMap = {
 }
 const currentTitle = computed(() => titleMap[route.path] ?? 'Consultas')
 
-onMounted(() => initialize())
+// ── Temas ──────────────────────────────────────────────────────────────
+const themes = [
+  {
+    id: 'dark',
+    label: 'Oscuro',
+    emoji: '🌙',
+    bg:       '#0f1117',
+    surface:  '#1a1d27',
+    surface2: '#22263a',
+    border:   'rgba(255,255,255,0.07)',
+    accent:   '#4f8ef7',
+    accent2:  '#38d9a9',
+    warn:     '#f6ad55',
+    danger:   '#fc6b6b',
+    text:     '#e8eaf0',
+    text2:    '#8b90a7',
+    text3:    '#555c7a',
+  },
+  {
+    id: 'light',
+    label: 'Claro',
+    emoji: '☀️',
+    bg:       '#f5f7ff',
+    surface:  '#ffffff',
+    surface2: '#eef1fb',
+    border:   'rgba(0,0,0,0.08)',
+    accent:   '#3b75e8',
+    accent2:  '#0f9d7a',
+    warn:     '#c47f00',
+    danger:   '#d43a3a',
+    text:     '#1a1d27',
+    text2:    '#4a4e6a',
+    text3:    '#9194a8',
+  },
+  {
+    id: 'midnight',
+    label: 'Midnight',
+    emoji: '🌌',
+    bg:       '#0a0e1a',
+    surface:  '#111828',
+    surface2: '#1a2236',
+    border:   'rgba(100,181,246,0.1)',
+    accent:   '#64b5f6',
+    accent2:  '#4dd0e1',
+    warn:     '#ffb74d',
+    danger:   '#ef5350',
+    text:     '#ccd6f6',
+    text2:    '#7ea3cc',
+    text3:    '#3d5a7a',
+  },
+  {
+    id: 'forest',
+    label: 'Forest',
+    emoji: '🌿',
+    bg:       '#0a1a0e',
+    surface:  '#112216',
+    surface2: '#1a3320',
+    border:   'rgba(56,217,169,0.12)',
+    accent:   '#38d9a9',
+    accent2:  '#69f0ae',
+    warn:     '#ffd54f',
+    danger:   '#ff6e6e',
+    text:     '#d4f5dc',
+    text2:    '#7ac49a',
+    text3:    '#3a6a4a',
+  },
+  {
+    id: 'rose',
+    label: 'Rose',
+    emoji: '🌸',
+    bg:       '#140a10',
+    surface:  '#1f1018',
+    surface2: '#2e1622',
+    border:   'rgba(244,143,177,0.12)',
+    accent:   '#f48fb1',
+    accent2:  '#f06292',
+    warn:     '#ffcc02',
+    danger:   '#ff5252',
+    text:     '#fce4ec',
+    text2:    '#c48098',
+    text3:    '#7a4060',
+  },
+]
+
+const STORAGE_KEY = 'app-theme'
+const activeTheme = ref('dark')
+const themeMenuOpen = ref(false)
+
+const currentTheme = computed(() => themes.find(t => t.id === activeTheme.value) ?? themes[0])
+
+function applyTheme(id) {
+  activeTheme.value = id
+  themeMenuOpen.value = false
+  localStorage.setItem(STORAGE_KEY, id)
+
+  const t = themes.find(th => th.id === id)
+  if (!t) return
+
+  const root = document.documentElement
+  root.setAttribute('data-theme', id)
+
+  // Actualizar variables CSS en :root
+  const vars = {
+    '--bg':       t.bg,
+    '--surface':  t.surface,
+    '--surface2': t.surface2,
+    '--border':   t.border,
+    '--accent':   t.accent,
+    '--accent2':  t.accent2,
+    '--warn':     t.warn,
+    '--danger':   t.danger,
+    '--text':     t.text,
+    '--text2':    t.text2,
+    '--text3':    t.text3,
+  }
+  for (const [k, v] of Object.entries(vars)) {
+    root.style.setProperty(k, v)
+  }
+
+  // Meta theme-color del navegador / PWA
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', t.bg)
+}
+
+onMounted(() => {
+  initialize()
+  const saved = localStorage.getItem(STORAGE_KEY) ?? 'dark'
+  applyTheme(saved)
+})
 </script>
 
 <style>
@@ -99,6 +266,7 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 .app-shell {
@@ -117,12 +285,84 @@ body {
   padding: 0 16px;
   position: sticky; top: 0; z-index: 40;
   flex-shrink: 0;
+  transition: background 0.25s ease, border-color 0.25s ease;
 }
 .app-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
 .app-badge {
   font-size: 0.7rem; color: var(--text3);
   background: var(--surface2); padding: 3px 9px;
   border-radius: 20px; border: 1px solid var(--border);
+  transition: background 0.25s ease;
+}
+
+/* Botón selector de tema */
+.theme-toggle-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.theme-toggle-btn:active { transform: scale(0.9); }
+
+/* Backdrop y menú de temas */
+.theme-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+.theme-menu {
+  width: 100%; max-width: 600px;
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border: 1px solid var(--border);
+  padding: 20px 16px 32px;
+  animation: slideUp 0.2s ease;
+}
+.theme-menu-title {
+  font-size: 0.8rem; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 16px;
+}
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.theme-option {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  background: none; border: none; cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-preview {
+  width: 100%; aspect-ratio: 3/4;
+  border-radius: 10px;
+  border: 2.5px solid transparent;
+  padding: 6px;
+  display: flex; flex-direction: column; gap: 4px;
+  transition: border-color 0.15s, transform 0.15s;
+  overflow: hidden;
+}
+.theme-option.active .theme-preview,
+.theme-option:active .theme-preview { transform: scale(0.95); }
+.tp-bar {
+  height: 10px; border-radius: 4px;
+  display: flex; align-items: center; padding: 0 4px;
+}
+.tp-dot { width: 5px; height: 5px; border-radius: 50%; }
+.tp-line { height: 6px; border-radius: 3px; margin-top: 2px; }
+.tp-line.short { width: 60%; }
+.theme-name {
+  font-size: 0.65rem; font-weight: 700;
+  text-align: center; white-space: nowrap;
+  transition: color 0.15s;
 }
 
 /* Main */
@@ -139,6 +379,7 @@ body {
   display: flex; align-items: center;
   flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom);
+  transition: background 0.25s ease;
 }
 .nav-item {
   flex: 1; display: flex; flex-direction: column;
@@ -182,6 +423,7 @@ body {
   background: var(--bg);
   padding: 10px 12px 8px;
   border-bottom: 1px solid var(--border);
+  transition: background 0.25s ease;
 }
 .search-wrap { position: relative; }
 .search-input {
@@ -191,7 +433,7 @@ body {
   border-radius: var(--radius);
   color: var(--text); font-size: 0.95rem;
   padding: 11px 38px 11px 14px;
-  outline: none; transition: border-color 0.15s;
+  outline: none; transition: border-color 0.15s, background 0.25s ease;
   -webkit-appearance: none;
 }
 .search-input:focus { border-color: var(--accent); }
