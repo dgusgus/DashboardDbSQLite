@@ -57,7 +57,12 @@ export function useShare() {
 
   // ── Formateadores por tipo ──────────────────────────────────────────
 
-  function formatOperador(op, actas = []) {
+  /**
+   * @param {object} op       - Datos del operador
+   * @param {Array}  actas    - Actas asignadas al operador
+   * @param {Array}  notarios - Notarios del mismo recinto (puede estar vacío)
+   */
+  function formatOperador(op, actas = [], notarios = []) {
     const lines = [
       `👷 OPERADOR ELECTORAL`,
       `${'─'.repeat(28)}`,
@@ -83,6 +88,19 @@ export function useShare() {
       `Departamento: ${op.departamento}`,
     ]
 
+    // Notarios del mismo recinto
+    if (notarios.length > 0) {
+      lines.push(``, `📝 NOTARIO(S) EN ESTE RECINTO (${notarios.length})`)
+      notarios.forEach((n, i) => {
+        if (notarios.length > 1) lines.push(`  · Notario ${i + 1}`)
+        lines.push(`Nombre:       ${n.nombre}`)
+        lines.push(`CI:           ${n.ci}${n.expedido ? ' ' + n.expedido : ''}`)
+        if (n.celular) lines.push(`Teléfono:     ${n.celular}`)
+        if (n.cargo)   lines.push(`Cargo:        ${n.cargo}`)
+      })
+    }
+
+    // Actas asignadas al operador
     if (actas.length > 0) {
       lines.push(``, `📋 ACTAS ASIGNADAS (${actas.length})`)
       lines.push(actas.map(a => a.codigo).join('  ·  '))

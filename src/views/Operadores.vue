@@ -118,6 +118,26 @@
               <div class="d-row"><span class="d-key">Departamento</span><span class="d-val">{{ selected.departamento }}</span></div>
             </div>
 
+            <!-- Notario del mismo recinto -->
+            <div class="d-section" v-if="notarios.length > 0">
+              <div class="d-label">Notario(s) en este recinto ({{ notarios.length }})</div>
+              <div v-for="n in notarios" :key="n.id" style="padding: 6px 0; border-bottom: 1px solid var(--border);">
+                <div class="d-row" style="border:none;padding:2px 0"><span class="d-key">Nombre</span><span class="d-val">{{ n.nombre }}</span></div>
+                <div class="d-row" style="border:none;padding:2px 0"><span class="d-key">CI</span><span class="d-val">{{ n.ci }} {{ n.expedido }}</span></div>
+                <div class="d-row" style="border:none;padding:2px 0" v-if="n.celular">
+                  <span class="d-key">Teléfono</span>
+                  <a :href="`tel:${n.celular}`" class="d-val" style="color:var(--accent2)">{{ n.celular }}</a>
+                </div>
+                <div class="d-row" style="border:none;padding:2px 0" v-if="n.cargo">
+                  <span class="d-key">Cargo</span><span class="d-val">{{ n.cargo }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="d-section" v-else>
+              <div class="d-label">Notario en recinto</div>
+              <p style="font-size:0.82rem;color:var(--text3);padding:6px 0">Sin notario asignado a este recinto</p>
+            </div>
+
             <!-- Actas -->
             <div class="d-section" v-if="actas.length > 0">
               <div class="d-label">Actas asignadas a este operador ({{ actas.length }})</div>
@@ -151,10 +171,25 @@ const q        = ref('')
 const tipo     = ref('')
 const selected = ref(null)
 const actas    = ref([])
+const notarios = ref([])
 
 onMounted(() => {
   all.value = query(queries.getAllOperadores())
 })
+
+// ── Búsqueda mejorada ──────────────────────────────────────────────────
+// Para grupos numéricos ("grupo 1", "1", etc.) usamos coincidencia de token
+// completo: "1" no debe coincidir con "10" ni "14".
+function matchToken(value, term) {
+  if (!value) return false
+  const v = value.toString().toLowerCase()
+  const t = term.toLowerCase()
+  // El término debe estar delimitado por inicio/fin de cadena o espacio/guión
+  const regex = new RegExp(
+    `(?:^|[\\s\\-_])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s\\-_])`
+  )
+  return regex.test(v)
+}
 
 const filtered = computed(() => {
   let data = all.value
@@ -162,9 +197,12 @@ const filtered = computed(() => {
   if (!q.value)   return data
   const t = q.value.toLowerCase()
   return data.filter(o =>
+    // Nombre y CI: búsqueda libre (subcadena normal)
     o.nombre?.toLowerCase().includes(t) ||
     o.cedula?.includes(t) ||
-    o.grupo?.toLowerCase().includes(t) ||
+    // Grupo: token completo — "1" no coincide con "10" ni "14"
+    matchToken(o.grupo, t) ||
+    // El resto: subcadena normal
     o.recinto?.toLowerCase().includes(t) ||
     o.coordinador?.toLowerCase().includes(t) ||
     o.municipio?.toLowerCase().includes(t)
@@ -173,13 +211,26 @@ const filtered = computed(() => {
 
 function open(op) {
   selected.value = op
+
+  // Actas del operador
   actas.value = op.id
     ? query(`SELECT a.id, a.codigo FROM acta a WHERE a.persona_id = ? ORDER BY a.codigo`, [op.id])
+    : []
+
+  // Notario(s) del mismo recinto
+  notarios.value = op.recinto_id
+    ? query(
+        `SELECT p.id, p.nombre, p.ci, p.expedido, p.celular, p.cargo
+         FROM persona p
+         WHERE p.tipo = 'notario' AND p.recinto_id = ?
+         ORDER BY p.nombre`,
+        [op.recinto_id]
+      )
     : []
 }
 
 function shareSelected() {
-  const texto = formatOperador(selected.value, actas.value)
+  const texto = formatOperador(selected.value, actas.value, notarios.value)
   share(texto, selected.value.nombre)
 }
 </script>
