@@ -5,9 +5,25 @@
     <!-- ── LOADING ──────────────────────────── -->
     <div v-if="!ready" class="splash">
       <div v-if="isLoading" class="splash-inner">
-        <div class="splash-logo">📋</div>
-        <div class="splash-spinner"></div>
-        <p class="splash-text">Cargando datos…</p>
+        <!-- Logo / ícono -->
+        <div class="splash-icon">
+          <div class="splash-icon-lines">
+            <div class="sil sil-1"></div>
+            <div class="sil sil-2"></div>
+            <div class="sil sil-3"></div>
+          </div>
+        </div>
+        <!-- Nombre -->
+        <div class="splash-brand">
+          <span class="splash-name">Dgus</span>
+          <span class="splash-sub-brand">Consultas Electorales</span>
+        </div>
+        <!-- Tres puntos animados -->
+        <div class="splash-dots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
       </div>
       <div v-else-if="error" class="splash-error">
         <div class="splash-logo">⚠️</div>
@@ -393,25 +409,74 @@ body {
 .nav-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 
 /* Splash */
-.splash { height: 100dvh; display: flex; align-items: center; justify-content: center; }
-.splash-inner, .splash-error {
+.splash { height: 100dvh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.splash-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px; padding: 32px; text-align: center;
+  animation: splashFadeIn 0.5s ease both;
+}
+.splash-error {
   display: flex; flex-direction: column; align-items: center;
   gap: 14px; padding: 32px; text-align: center;
 }
-.splash-logo { font-size: 2.8rem; }
-.splash-spinner {
-  width: 32px; height: 32px;
-  border: 3px solid var(--surface2); border-top-color: var(--accent);
-  border-radius: 50%; animation: spin 0.8s linear infinite;
+
+/* Ícono con líneas */
+.splash-icon {
+  width: 80px; height: 80px; border-radius: 22px;
+  background: var(--surface);
+  border: 1.5px solid rgba(79,142,247,0.25);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 7px; padding: 18px;
+  animation: splashIconPulse 2.5s ease-in-out infinite;
 }
-.splash-text { color: var(--text2); font-size: 0.88rem; }
-.splash-title { font-weight: 700; font-size: 1rem; }
+.splash-icon-lines { display: flex; flex-direction: column; gap: 7px; width: 100%; }
+.sil {
+  height: 4px; border-radius: 3px; background: var(--accent);
+  animation: splashBarIn 0.6s ease both;
+}
+.sil-1 { width: 100%; animation-delay: 0.1s; }
+.sil-2 { width: 100%; background: var(--text3); animation-delay: 0.25s; }
+.sil-3 { width: 62%;  background: var(--text3); animation-delay: 0.4s; }
+
+/* Nombre */
+.splash-brand { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.splash-name {
+  font-size: 1.5rem; font-weight: 900; color: var(--text);
+  letter-spacing: -0.02em;
+  animation: splashSlideUp 0.5s ease 0.3s both;
+}
+.splash-sub-brand {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent);
+  animation: splashSlideUp 0.5s ease 0.45s both;
+}
+
+/* Tres puntos */
+.splash-dots { display: flex; gap: 6px; margin-top: 4px; }
+.dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  animation: splashDotPulse 1.1s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.18s; }
+.dot:nth-child(3) { animation-delay: 0.36s; }
+
+/* Error */
+.splash-logo { font-size: 2.8rem; }
+.splash-title { font-weight: 700; font-size: 1rem; color: var(--text); }
 .splash-sub { color: var(--text2); font-size: 0.8rem; max-width: 260px; }
 .retry-btn {
   margin-top: 8px; background: var(--accent); color: #fff;
   border: none; border-radius: var(--radius-sm);
   padding: 10px 24px; font-size: 0.88rem; font-weight: 600; cursor: pointer;
 }
+
+/* Keyframes del splash */
+@keyframes splashFadeIn   { from { opacity:0; transform:scale(0.94) } to { opacity:1; transform:scale(1) } }
+@keyframes splashSlideUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+@keyframes splashBarIn    { from { opacity:0; transform:scaleX(0); transform-origin:left } to { opacity:1; transform:scaleX(1) } }
+@keyframes splashIconPulse{ 0%,100%{box-shadow:0 0 0 0 rgba(79,142,247,0)} 50%{box-shadow:0 0 0 8px rgba(79,142,247,0.1)} }
+@keyframes splashDotPulse { 0%,100%{opacity:0.25;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
 
 /* Page transitions */
 .page-enter-active, .page-leave-active { transition: opacity 0.12s ease; }
