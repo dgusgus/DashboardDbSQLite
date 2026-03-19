@@ -243,21 +243,61 @@ function matchToken(value, term) {
   if (!value) return false
   const v = value.toString().toLowerCase()
   const t = term.toLowerCase()
-  return new RegExp(`(?:^|[\\s\\-_])${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?=$|[\\s\\-_])`).test(v)
+  return new RegExp(`(?:^|[\\s\\-_])${t.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')}(?=$|[\\s\\-_])`).test(v)
+}
+
+// Detecta si el término parece un código de acta (solo dígitos, mín. 2 chars)
+function pareceActa(term) {
+  return /^\d[\d\-]*$/.test(term.trim()) && term.trim().length >= 2
+}
+
+// SQL directo a la tabla acta — devuelve Set de persona_id que coinciden
+function buscarPorActa(term) {
+  try {
+    const rows = query(
+      `SELECT DISTINCT p.id
+       FROM acta a
+       JOIN persona p ON a.persona_id = p.id
+       WHERE a.codigo LIKE ?
+       LIMIT 100`,
+      [`%${term.trim()}%`]
+    )
+    return new Set(rows.map(r => r.id))
+  } catch {
+    return new Set()
+  }
 }
 
 const filtered = computed(() => {
   let data = all.value
   if (tipo.value) data = data.filter(o => o.tipo_operador === tipo.value)
-  if (!q.value)   return data
-  const t = q.value.toLowerCase()
+  if (!q.value) return data
+
+  const t    = q.value.trim()
+  const tLow = t.toLowerCase()
+
+  // Si parece número de acta: SQL + filtro normal, sin duplicados
+  if (pareceActa(t)) {
+    const idsActa = buscarPorActa(t)
+    return data.filter(o =>
+      idsActa.has(o.id) ||
+      o.nombre?.toLowerCase().includes(tLow) ||
+      o.cedula?.includes(t) ||
+      matchToken(o.grupo, t) ||
+      o.recinto?.toLowerCase().includes(tLow) ||
+      o.coordinador?.toLowerCase().includes(tLow) ||
+      o.municipio?.toLowerCase().includes(tLow)
+    )
+  }
+
+  // Búsqueda normal de texto
   return data.filter(o =>
-    o.nombre?.toLowerCase().includes(t) ||
+    o.nombre?.toLowerCase().includes(tLow) ||
     o.cedula?.includes(t) ||
     matchToken(o.grupo, t) ||
-    o.recinto?.toLowerCase().includes(t) ||
-    o.coordinador?.toLowerCase().includes(t) ||
-    o.municipio?.toLowerCase().includes(t)
+    o.recinto?.toLowerCase().includes(tLow) ||
+    o.coordinador?.toLowerCase().includes(tLow) ||
+    o.municipio?.toLowerCase().includes(tLow)
   )
 })
 

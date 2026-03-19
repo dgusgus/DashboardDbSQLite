@@ -52,44 +52,38 @@ export function useCarrito() {
     guardar()
   }
 
-  // Genera el texto para compartir todos los operadores del carrito
+  // Genera el texto condensado para compartir
   function formatCarrito() {
     if (items.value.length === 0) return ''
 
     const sep = '─'.repeat(30)
     const bloques = items.value.map(op => {
+      const tipo = op.tipo_operador === 'rural' ? 'Móvil' : 'Urbano'
+      const actas = op.actas_carrito ?? []
+
       const lineas = [
         `👷 ${op.nombre.toUpperCase()}`,
-        `${sep}`,
+        `Municipio:    ${op.municipio || '—'}`,
         `Asiento:      ${op.asiento_electoral || '—'}`,
         `Recinto:      ${op.recinto || '—'}`,
-        op.recinto_direccion ? `Dirección:    ${op.recinto_direccion}` : null,
-        `Municipio:    ${op.municipio || '—'}`,
         `Celular:      ${op.telefono || '—'}`,
-        op.correo ? `Correo:       ${op.correo}` : null,
-        `Tipo:         ${op.tipo_operador || '—'}`,
-        ``,
+        `Tipo:         ${tipo}`,
         `Grupo:        ${op.grupo || '—'}`,
         `Coordinador:  ${op.coordinador || '—'}`,
         op.coordinador_telefono ? `Tel. coord.:  ${op.coordinador_telefono}` : null,
-        `Jefe:         ${op.jefe || '—'}`,
+        actas.length > 0
+          ? `📋 Actas (${actas.length}): ${actas.map(a => a.codigo).join('  ·  ')}`
+          : null,
+        sep,
       ]
-
-      // Actas designadas
-      const actas = op.actas_carrito ?? []
-      if (actas.length > 0) {
-        lineas.push(``)
-        lineas.push(`📋 Actas (${actas.length}): ${actas.map(a => a.codigo).join('  ·  ')}`)
-      }
 
       return lineas.filter(l => l !== null).join('\n')
     })
 
     return [
-      `🗳️ OPERADORES ELECTORALES — SELECCIÓN`,
+      `🗳️ OPERADORES ELECTORALES`,
       `${'═'.repeat(30)}`,
       ...bloques,
-      `${'═'.repeat(30)}`,
       `Total: ${items.value.length} operador${items.value.length !== 1 ? 'es' : ''}`,
     ].join('\n')
   }
