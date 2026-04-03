@@ -35,16 +35,30 @@
 
     <!-- ── APP ─────────────────────────────── -->
     <template v-else>
-      <header class="app-header">
+     <header class="app-header">
         <span class="app-title">{{ currentTitle }}</span>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="app-badge">{{ totalRecords.toLocaleString() }} reg.</span>
+
+          <!-- Nombre del coordinador autenticado -->
+          <span class="user-chip" v-if="userName">{{ initials }}</span>
 
           <!-- Botón selector de tema -->
           <button class="theme-toggle-btn" @click="themeMenuOpen = !themeMenuOpen" :title="currentTheme.label">
             <span style="font-size:14px;line-height:1;">{{ currentTheme.emoji }}</span>
           </button>
+
+          <!-- Botón cerrar sesión -->
+          <button class="logout-btn" @click="confirmLogout" title="Cerrar sesión">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
         </div>
+
 
         <!-- Menú de temas -->
         <Teleport to="body">
@@ -105,6 +119,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDatabase } from '@/composables/useDatabase.js'
+
+import { useAuth } from '@/composables/useAuth.js'
+import { useRouter } from 'vue-router'
+
+const { userName, logout } = useAuth()
+const router = useRouter()
+
 
 const { isLoading, error, ready, initialize, totalRecords } = useDatabase()
 const route = useRoute()
@@ -253,6 +274,24 @@ onMounted(() => {
   const saved = localStorage.getItem(STORAGE_KEY) ?? 'dark'
   applyTheme(saved)
 })
+
+// Iniciales para el avatar
+const initials = computed(() => {
+  if (!userName.value) return ''
+  return userName.value
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+})
+ 
+function confirmLogout() {
+  if (confirm('¿Cerrar sesión?')) {
+    logout()
+    router.push('/login')
+  }
+}
 </script>
 
 <style>
@@ -652,4 +691,38 @@ body {
 @keyframes spin    { to { transform: rotate(360deg) } }
 @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+.user-chip {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(79,142,247,0.15);
+  border: 1.5px solid rgba(79,142,247,0.3);
+  color: var(--accent);
+  font-size: 0.65rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; letter-spacing: 0.03em;
+}
+ 
+.logout-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text3);
+
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(252,107,107,0.08);
+}
+
+.logout-btn:active {
+  transform: scale(0.9);
+}
 </style>
+hola
