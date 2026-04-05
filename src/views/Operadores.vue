@@ -18,17 +18,27 @@
       </div>
     </div>
 
-    <!-- ── CHIPS TIPO ── -->
+    <!-- ── CHIPS TIPO + SELECT PROVINCIA ── -->
     <div class="chips">
       <button class="chip" :class="{ active: tipo === '' }"       @click="tipo = ''">Todos</button>
       <button class="chip" :class="{ active: tipo === 'rural' }"  @click="tipo = 'rural'">🌾 Rural</button>
       <button class="chip" :class="{ active: tipo === 'urbano' }" @click="tipo = 'urbano'">🏙️ Urbano</button>
+
+      <select
+        v-model="provincia"
+        class="prov-select"
+        :class="{ 'prov-active': provincia !== '' }"
+      >
+        <option value="">Provincia</option>
+        <option v-for="p in provincias" :key="p" :value="p">{{ p }}</option>
+      </select>
     </div>
 
     <!-- ── CONTEO + BOTÓN CARRITO ── -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 3px;">
       <p style="font-size:0.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin:0;">
         {{ filtered.length }} operadores
+        <span v-if="provincia" style="color:var(--accent);font-weight:700"> · {{ provincia }}</span>
       </p>
       <button v-if="total > 0" class="carrito-fab" @click="carritoOpen = true">
         🛒 <span class="carrito-count">{{ total }}</span>
@@ -55,7 +65,6 @@
             <span v-if="op.actas_asignadas > 0" class="tag tag-green">{{ op.actas_asignadas }} actas</span>
           </div>
         </div>
-        <!-- Botón + / ✓ del carrito -->
         <button
           class="chk-btn"
           :class="{ 'chk-on': estaEnCarrito(op.id) }"
@@ -217,9 +226,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useDatabase } from '@/composables/useDatabase.js'
-import { useShare } from '@/composables/useShare.js'
-import { useCarrito } from '@/composables/useCarrito.js'
-import { queries } from '@/utils/queries.js'
+import { useShare }    from '@/composables/useShare.js'
+import { useCarrito }  from '@/composables/useCarrito.js'
+import { queries }     from '@/utils/queries.js'
 
 const { query } = useDatabase()
 const { share, formatOperador } = useShare()
@@ -229,12 +238,19 @@ const all         = ref([])
 const rawQ        = ref('')
 const q           = ref('')
 const tipo        = ref('')
+const provincia   = ref('')          // ← NUEVO
 const selected    = ref(null)
 const actas       = ref([])
 const notarios    = ref([])
 const carritoOpen = ref(false)
 
 onMounted(() => { all.value = query(queries.getAllOperadores()) })
+
+// Lista de provincias únicas, ordenadas alfabéticamente
+const provincias = computed(() => {           // ← NUEVO
+  const set = new Set(all.value.map(o => o.provincia).filter(Boolean))
+  return [...set].sort()
+})
 
 const applyDebounce = useDebounceFn((val) => { q.value = val }, 250)
 watch(rawQ, applyDebounce)
@@ -243,15 +259,13 @@ function matchToken(value, term) {
   if (!value) return false
   const v = value.toString().toLowerCase()
   const t = term.toLowerCase()
-  return new RegExp(`(?:^|[\\s\\-_])${t.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')}(?=$|[\\s\\-_])`).test(v)
+  return new RegExp(`(?:^|[\\s\\-_])${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?=$|[\\s\\-_])`).test(v)
 }
 
-// Detecta si el término parece un código de acta (solo dígitos, mín. 2 chars)
 function pareceActa(term) {
   return /^\d[\d\-]*$/.test(term.trim()) && term.trim().length >= 2
 }
 
-// SQL directo a la tabla acta — devuelve Set de persona_id que coinciden
 function buscarPorActa(term) {
   try {
     const rows = query(
@@ -263,20 +277,23 @@ function buscarPorActa(term) {
       [`%${term.trim()}%`]
     )
     return new Set(rows.map(r => r.id))
-  } catch {
-    return new Set()
-  }
+  } catch { return new Set() }
 }
 
 const filtered = computed(() => {
   let data = all.value
-  if (tipo.value) data = data.filter(o => o.tipo_operador === tipo.value)
+
+  // Filtros de chip
+  if (tipo.value)      data = data.filter(o => o.tipo_operador === tipo.value)
+
+  // Filtro de provincia ← NUEVO
+  if (provincia.value) data = data.filter(o => o.provincia === provincia.value)
+
   if (!q.value) return data
 
   const t    = q.value.trim()
   const tLow = t.toLowerCase()
 
-  // Si parece número de acta: SQL + filtro normal, sin duplicados
   if (pareceActa(t)) {
     const idsActa = buscarPorActa(t)
     return data.filter(o =>
@@ -290,7 +307,6 @@ const filtered = computed(() => {
     )
   }
 
-  // Búsqueda normal de texto
   return data.filter(o =>
     o.nombre?.toLowerCase().includes(tLow) ||
     o.cedula?.includes(t) ||
@@ -329,6 +345,37 @@ function shareSelected() {
 <style scoped>
 .card-selected { border-color: var(--accent) !important; background: rgba(79,142,247,0.05) !important; }
 
+/* ── Selector de provincia ────────────────────────────────────────────── */
+.prov-select {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  color: var(--text2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 24px 5px 12px;
+  outline: none;
+  cursor: pointer;
+  max-width: 130px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b90a7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s, color 0.15s;
+}
+/* Cuando hay una provincia seleccionada, resaltar igual que un chip activo */
+.prov-select.prov-active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+/* Las opciones del select heredan el fondo del SO — solo forzamos el fondo base */
+.prov-select option { background: var(--surface); color: var(--text); }
+
+/* ── Carrito ──────────────────────────────────────────────────────────── */
 .chk-btn {
   width:28px; height:28px; border-radius:50%;
   border:2px solid var(--text3); background:none; color:var(--text3);
