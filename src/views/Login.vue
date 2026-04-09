@@ -43,6 +43,17 @@
       <template v-else>
         <form @submit.prevent="loginWithForm" class="login-form" autocomplete="off">
 
+            <div class="field-group">
+            <label class="field-label">Correo electrónico</label>
+            <input
+              v-model="correo"
+              class="field-input"
+              type="email"
+              placeholder="coordinador@ejemplo.com"
+              autocomplete="off"
+              required
+            />
+          </div>
           <div class="field-group">
             <label class="field-label">Carnet de identidad</label>
             <input
@@ -54,18 +65,6 @@
               autocomplete="off"
               autocorrect="off"
               spellcheck="false"
-              required
-            />
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Correo electrónico</label>
-            <input
-              v-model="correo"
-              class="field-input"
-              type="email"
-              placeholder="coordinador@ejemplo.com"
-              autocomplete="off"
               required
             />
           </div>

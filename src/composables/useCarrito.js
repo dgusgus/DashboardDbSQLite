@@ -53,40 +53,49 @@ export function useCarrito() {
   }
 
   // Genera el texto condensado para compartir
-  function formatCarrito() {
-    if (items.value.length === 0) return ''
-
-    const sep = '─'.repeat(30)
-    const bloques = items.value.map(op => {
-      const tipo = op.tipo_operador === 'rural' ? 'Móvil' : 'Urbano'
-      const actas = op.actas_carrito ?? []
-
-      const lineas = [
-        `👷 ${op.nombre.toUpperCase()}`,
-        `Municipio:    ${op.municipio || '—'}`,
-        `Asiento:      ${op.asiento_electoral || '—'}`,
-        `Recinto:      ${op.recinto || '—'}`,
-        `Celular:      ${op.telefono || '—'}`,
-        `Tipo:         ${tipo}`,
-        `Grupo:        ${op.grupo || '—'}`,
-        `Coordinador:  ${op.coordinador || '—'}`,
-        op.coordinador_telefono ? `Tel. coord.:  ${op.coordinador_telefono}` : null,
-        actas.length > 0
-          ? `📋 Actas (${actas.length}): ${actas.map(a => a.codigo).join('  ·  ')}`
-          : null,
-        sep,
-      ]
-
-      return lineas.filter(l => l !== null).join('\n')
-    })
-
-    return [
-      `🗳️ OPERADORES ELECTORALES`,
-      `${'═'.repeat(30)}`,
-      ...bloques,
-      `Total: ${items.value.length} operador${items.value.length !== 1 ? 'es' : ''}`,
-    ].join('\n')
+// Helpers (ponlos arriba del composable o dentro si prefieres)
+function nombreCorto(nombre = '') {
+  const partes = nombre.trim().split(' ')
+  if (partes.length >= 2) {
+    return `${partes[0]} ${partes[partes.length - 1]}`
   }
+  return nombre
+}
+
+function nombreCoord(nombre = '') {
+  const partes = nombre.trim().split(' ')
+  if (partes.length >= 2) {
+    return `${partes[0]} ${partes[partes.length - 2]}`
+  }
+  return nombre
+}
+
+function tipoCorto(tipo) {
+  return tipo === 'rural' ? 'M' : 'U'
+}
+
+// 🔥 TU FUNCIÓN MODIFICADA
+function formatCarrito() {
+  if (items.value.length === 0) return ''
+
+  const bloques = items.value.map(op => {
+
+const lineas = [
+  `👷 *${nombreCorto(op.nombre).toUpperCase()}* (${op.grupo ? op.grupo.replace('Grupo ', 'G') : '—'}-${tipoCorto(op.tipo_operador)})`,
+  `📍 ${op.recinto || '—'}`,
+  `📞 ${op.telefono || '—'}`,
+  `> ${nombreCoord(op.coordinador || '—')} | ${op.coordinador_telefono || '—'}`
+]
+
+    return lineas.join('\n')
+  })
+
+  return [
+    `🗳️ *OPERADORES (${items.value.length})*`,
+    '',
+    bloques.join('\n\n') // 👈 separa cada operador con espacio
+  ].join('\n')
+}
 
   async function compartirCarrito() {
     const texto = formatCarrito()
