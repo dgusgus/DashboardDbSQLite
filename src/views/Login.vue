@@ -117,6 +117,16 @@
         </div>
       </Teleport>
 
+      <!-- Banner de instalación PWA -->
+<div v-if="canInstall && !isInstalled" class="install-banner" @click="instalar">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <span class="install-title">Instalar app</span>
+    <span class="install-sub">Acceso rápido desde tu pantalla de inicio</span>
+  </div>
+  <button class="install-btn">Instalar</button>
+</div>
+
       <p class="login-hint">
         {{ (bioAvailable && bioRegistered && !showForm)
           ? 'Toca el botón y coloca tu huella digital'
@@ -133,7 +143,9 @@ import { useRouter } from 'vue-router'
 import { useDatabase }  from '@/composables/useDatabase.js'
 import { useAuth }      from '@/composables/useAuth.js'
 import { useBiometric } from '@/composables/useBiometric.js'
+import { usePwaInstall } from '@/composables/usePwaInstall.js'
 
+const { canInstall, isInstalled, promptInstall } = usePwaInstall()
 const { query }      = useDatabase()
 const { setSession } = useAuth()
 const { isSupported, hasCredential, register, authenticate, clearCredential } = useBiometric()
@@ -159,6 +171,10 @@ onMounted(async () => {
   bioRegistered.value = hasCredential()
   if (!bioAvailable.value || !bioRegistered.value) showForm.value = true
 })
+
+async function instalar() {
+  await promptInstall()
+}
 
 // ── Login formulario ──────────────────────────────────────────────────────
 async function loginWithForm() {
@@ -369,4 +385,56 @@ function skipBio() {
 .bio-prompt-err { font-size: 0.75rem; color: var(--danger); text-align: center; }
 @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideUp { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+.install-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.install-banner:active {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
+.install-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.install-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.install-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.install-sub {
+  font-size: 0.68rem;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.install-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
 </style>
