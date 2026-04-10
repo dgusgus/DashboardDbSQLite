@@ -127,6 +127,23 @@
   <button class="install-btn">Instalar</button>
 </div>
 
+      <!-- 🎸 Easter Egg Music Note -->
+      <button
+        class="egg-note"
+        :class="{ 'egg-note--playing': eggPlaying }"
+        @click="toggleEgg"
+        :title="eggPlaying ? 'Pausar música' : 'Reproducir música'"
+        aria-label="Control de música"
+      >
+        <span class="egg-note__icon">🎸</span>
+        <span class="egg-note__bars">
+          <span class="bar b1"></span>
+          <span class="bar b2"></span>
+          <span class="bar b3"></span>
+          <span class="bar b4"></span>
+        </span>
+      </button>
+
       <p class="login-hint">
         {{ (bioAvailable && bioRegistered && !showForm)
           ? 'Toca el botón y coloca tu huella digital'
@@ -138,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDatabase }  from '@/composables/useDatabase.js'
 import { useAuth }      from '@/composables/useAuth.js'
@@ -166,10 +183,62 @@ const bioRegisterError = ref('')
 
 let _pendingUser = null
 
+// ── 🎸 Easter Egg: KISS - I Was Made for Lovin' You ─────────────────────────
+const eggAudio     = ref(null)
+const eggPlaying   = ref(false)
+const eggMuted     = ref(false)
+
+function initEasterEgg() {
+  const audio = new Audio('/kiss-lovin-you.mp3')
+  audio.loop   = true
+  audio.volume = 0.18
+  eggAudio.value = audio
+
+  // Autoplay con política de navegadores: intentar silenciado primero,
+  // luego un segundo intento con volumen si el usuario interactúa
+  audio.muted = true
+  audio.play()
+    .then(() => {
+      // Silenciado funcionó → fade in
+      audio.muted = false
+      eggPlaying.value = true
+    })
+    .catch(() => {
+      // Autoplay bloqueado → esperar primer tap del usuario
+      const unlock = () => {
+        audio.muted = false
+        audio.play().then(() => { eggPlaying.value = true }).catch(() => {})
+        document.removeEventListener('pointerdown', unlock, { once: true })
+      }
+      document.addEventListener('pointerdown', unlock, { once: true })
+    })
+}
+
+function toggleEgg() {
+  if (!eggAudio.value) return
+  if (eggPlaying.value) {
+    eggAudio.value.pause()
+    eggPlaying.value = false
+  } else {
+    eggAudio.value.play().then(() => { eggPlaying.value = true }).catch(() => {})
+  }
+}
+
+onUnmounted(() => {
+  if (eggAudio.value) {
+    eggAudio.value.pause()
+    eggAudio.value.src = ''
+    eggAudio.value = null
+  }
+})
+// ─────────────────────────────────────────────────────────────────────────────
+
 onMounted(async () => {
   bioAvailable.value  = await isSupported()
   bioRegistered.value = hasCredential()
   if (!bioAvailable.value || !bioRegistered.value) showForm.value = true
+
+  initEasterEgg()
 })
 
 async function instalar() {
@@ -436,5 +505,59 @@ function skipBio() {
   cursor: pointer;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ── 🎸 Easter Egg Note Button ───────────────────────────────────────────── */
+.egg-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 0.7rem;
+  opacity: 0.4;
+  transition: opacity 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.egg-note:hover,
+.egg-note--playing {
+  opacity: 0.85;
+  border-color: var(--border);
+}
+.egg-note__icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+/* Sound wave bars */
+.egg-note__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.egg-note__bars .bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  transform-origin: bottom;
+}
+.egg-note__bars .b1 { height: 5px; }
+.egg-note__bars .b2 { height: 10px; }
+.egg-note__bars .b3 { height: 7px; }
+.egg-note__bars .b4 { height: 4px; }
+
+/* Animate bars only when playing */
+.egg-note--playing .b1 { animation: eq 0.9s ease-in-out infinite alternate; }
+.egg-note--playing .b2 { animation: eq 0.7s ease-in-out 0.1s infinite alternate; }
+.egg-note--playing .b3 { animation: eq 0.8s ease-in-out 0.2s infinite alternate; }
+.egg-note--playing .b4 { animation: eq 0.6s ease-in-out 0.15s infinite alternate; }
+
+@keyframes eq {
+  from { transform: scaleY(0.3); }
+  to   { transform: scaleY(1.4); }
 }
 </style>
