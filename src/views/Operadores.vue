@@ -15,8 +15,21 @@
           spellcheck="false"
         />
         <button v-if="rawQ" class="search-clear" @click="rawQ = ''">✕</button>
+        <!-- Botón de escáner QR -->
+        <button class="qr-trigger" @click="qrOpen = true" title="Escanear QR">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="4" height="4" rx="0.5"/>
+            <path d="M14 20h4M18 14v4"/>
+          </svg>
+        </button>
       </div>
     </div>
+
+    <!-- ── ESCÁNER QR ── -->
+    <QrScanner v-if="qrOpen" @detected="handleQrDetected" @close="qrOpen = false" />
 
     <!-- ── CHIPS TIPO + SELECT PROVINCIA ── -->
     <div class="chips">
@@ -229,6 +242,7 @@ import { useDatabase } from '@/composables/useDatabase.js'
 import { useShare }    from '@/composables/useShare.js'
 import { useCarrito }  from '@/composables/useCarrito.js'
 import { queries }     from '@/utils/queries.js'
+import QrScanner from '@/components/QrScanner.vue'
 
 const { query } = useDatabase()
 const { share, formatOperador } = useShare()
@@ -243,8 +257,14 @@ const selected    = ref(null)
 const actas       = ref([])
 const notarios    = ref([])
 const carritoOpen = ref(false)
+const qrOpen      = ref(false)
 
 onMounted(() => { all.value = query(queries.getAllOperadores()) })
+
+function handleQrDetected(code) {
+  rawQ.value = code
+  qrOpen.value = false
+}
 
 // Lista de provincias únicas, ordenadas alfabéticamente
 const provincias = computed(() => {           // ← NUEVO
@@ -344,6 +364,42 @@ function shareSelected() {
 
 <style scoped>
 .card-selected { border-color: var(--accent) !important; background: rgba(79,142,247,0.05) !important; }
+
+/* ── Input: espacio para el botón QR ─────────────────────────────────── */
+.search-input { padding-right: 54px !important; }
+
+/* Botón ✕ se desplaza a la izquierda del botón QR */
+.search-clear {
+  position: absolute !important;
+  right: 50px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* ── Botón QR ───────────────────────────────────────────────────────── */
+.qr-trigger {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+.qr-trigger:active {
+  opacity: 0.8;
+  transform: translateY(-50%) scale(0.92);
+}
 
 /* ── Selector de provincia ────────────────────────────────────────────── */
 .prov-select {
