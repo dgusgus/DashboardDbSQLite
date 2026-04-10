@@ -189,7 +189,7 @@ const eggPlaying   = ref(false)
 const eggMuted     = ref(false)
 
 function initEasterEgg() {
-  const audio = new Audio('/kiss-lovin-you.mp3')
+  const audio = new Audio(import.meta.env.BASE_URL + 'kiss-lovin-you.mp3')
   audio.loop   = true
   audio.volume = 0.18
   eggAudio.value = audio
