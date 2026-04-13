@@ -11,14 +11,12 @@ export const queries = {
        JOIN recinto r ON p.recinto_id = r.id
        JOIN asiento_electoral ae ON r.asiento_id = ae.id
        JOIN municipio m ON ae.municipio_id = m.id
-       JOIN provincia pr ON m.provincia_id = pr.id
-       WHERE p.tipo = 'operador' AND pr.es_urbano = 0)                                AS operadores_rurales,
+       WHERE p.tipo = 'operador' AND m.es_urbano = 0)    AS operadores_rurales,
       (SELECT COUNT(*) FROM persona p
        JOIN recinto r ON p.recinto_id = r.id
        JOIN asiento_electoral ae ON r.asiento_id = ae.id
        JOIN municipio m ON ae.municipio_id = m.id
-       JOIN provincia pr ON m.provincia_id = pr.id
-       WHERE p.tipo = 'operador' AND pr.es_urbano = 1)                                AS operadores_urbanos,
+       WHERE p.tipo = 'operador' AND m.es_urbano = 1)    AS operadores_urbanos,
       (SELECT COUNT(*) FROM recinto)                                                   AS total_recintos,
       (SELECT COUNT(*) FROM persona WHERE tipo = 'notario')                           AS total_notarios,
       (SELECT COUNT(*) FROM acta)                                                      AS total_actas,
@@ -39,7 +37,7 @@ export const queries = {
       p.correo,
       p.cargo,
       p.user,
-      CASE WHEN pr.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo_operador,
+      CASE WHEN m.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo_operador,
       c.nombre_grupo  AS grupo,
       c.nombre        AS coordinador,
       c.ci            AS coordinador_ci,
@@ -53,7 +51,7 @@ export const queries = {
       ae.nombre       AS asiento_electoral,
       m.nombre        AS municipio,
       pr.nombre       AS provincia,
-      pr.es_urbano    AS provincia_urbana,
+      m.es_urbano     AS municipio_urbano,
       d.nombre        AS departamento,
       (SELECT COUNT(*) FROM acta a2 WHERE a2.persona_id = p.id) AS actas_asignadas
     FROM persona p
@@ -102,7 +100,7 @@ export const queries = {
       p.celular     AS telefono,
       p.correo,
       p.cargo,
-      CASE WHEN pr.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo_notario,
+      CASE WHEN m.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo_notario,
       r.nombre      AS recinto,
       r.direccion   AS recinto_direccion,
       ae.nombre     AS asiento_electoral,
@@ -130,11 +128,11 @@ export const queries = {
       r.nombre,
       r.direccion,
       r.distrito,
-      CASE WHEN pr.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo,
+      CASE WHEN m.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo,
       ae.nombre    AS asiento_electoral,
       m.nombre     AS municipio,
       pr.nombre    AS provincia,
-      pr.es_urbano AS provincia_urbana,
+      m.es_urbano AS municipio_urbano,
       d.nombre     AS departamento,
       (SELECT COUNT(*) FROM persona WHERE recinto_id = r.id AND tipo = 'operador') AS operadores_asignados,
       (SELECT COUNT(*) FROM persona WHERE recinto_id = r.id AND tipo = 'notario')  AS notarios_asignados,
@@ -164,7 +162,7 @@ export const queries = {
       m.nombre      AS municipio,
       pr.nombre     AS provincia,
       d.nombre      AS departamento,
-      CASE WHEN pr.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo_zona
+      CASE WHEN m.es_urbano = 1 THEN 'urbano' ELSE 'rural' END AS tipo_zona
     FROM acta a
     JOIN persona p            ON a.persona_id = p.id
     LEFT JOIN coordinador c   ON p.coordinador_id = c.id
@@ -196,8 +194,8 @@ export const queries = {
       c.celular       AS coordinador_telefono,
       c.nombre_grupo  AS grupo,
       COUNT(p.id)     AS total_operadores,
-      SUM(CASE WHEN pr.es_urbano = 0 THEN 1 ELSE 0 END) AS operadores_rurales,
-      SUM(CASE WHEN pr.es_urbano = 1 THEN 1 ELSE 0 END) AS operadores_urbanos
+      SUM(CASE WHEN m.es_urbano = 0 THEN 1 ELSE 0 END) AS operadores_rurales,
+      SUM(CASE WHEN m.es_urbano = 1 THEN 1 ELSE 0 END) AS operadores_urbanos
     FROM jefe j
     LEFT JOIN coordinador c   ON c.jefe_id = j.id
     LEFT JOIN persona p       ON p.coordinador_id = c.id AND p.tipo = 'operador'
@@ -214,11 +212,11 @@ export const queries = {
     SELECT
       d.nombre        AS departamento,
       pr.nombre       AS provincia,
-      pr.es_urbano    AS provincia_urbana,
+      m.es_urbano     AS municipio_urbano,
       m.nombre        AS municipio,
       COUNT(DISTINCT p.id)  AS total_operadores,
-      SUM(CASE WHEN pr.es_urbano = 0 THEN 1 ELSE 0 END) AS rurales,
-      SUM(CASE WHEN pr.es_urbano = 1 THEN 1 ELSE 0 END) AS urbanos,
+      SUM(CASE WHEN m.es_urbano = 0 THEN 1 ELSE 0 END) AS rurales,
+      SUM(CASE WHEN m.es_urbano = 1 THEN 1 ELSE 0 END) AS urbanos,
       COUNT(DISTINCT r.id)  AS recintos,
       COUNT(DISTINCT a.id)  AS actas_registradas
     FROM departamento d
@@ -238,7 +236,7 @@ export const queries = {
     SELECT
       r.nombre        AS recinto,
       r.direccion,
-      CASE WHEN pr.es_urbano = 1 THEN 'Urbano' ELSE 'Rural' END AS tipo,
+      CASE WHEN m.es_urbano = 1 THEN 'Urbano' ELSE 'Rural' END AS tipo,
       m.nombre        AS municipio,
       pr.nombre       AS provincia,
       d.nombre        AS departamento,

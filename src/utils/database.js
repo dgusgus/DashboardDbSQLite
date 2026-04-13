@@ -174,33 +174,30 @@ class DatabaseManager {
         JOIN recinto r ON p.recinto_id = r.id
         JOIN asiento_electoral ae ON r.asiento_id = ae.id
         JOIN municipio m ON ae.municipio_id = m.id
-        JOIN provincia pr ON m.provincia_id = pr.id
-        WHERE p.tipo = 'operador' AND pr.es_urbano = 0
+        WHERE p.tipo = 'operador' AND m.es_urbano = 0
       `)?.c || 0
+
 
       stats.operadores_urbanos = this.queryFirst(`
         SELECT COUNT(*) as c FROM persona p
         JOIN recinto r ON p.recinto_id = r.id
         JOIN asiento_electoral ae ON r.asiento_id = ae.id
         JOIN municipio m ON ae.municipio_id = m.id
-        JOIN provincia pr ON m.provincia_id = pr.id
-        WHERE p.tipo = 'operador' AND pr.es_urbano = 1
+        WHERE p.tipo = 'operador' AND m.es_urbano = 1
       `)?.c || 0
 
-      stats.recintos_rurales   = this.queryFirst(`
+      stats.recintos_rurales = this.queryFirst(`
         SELECT COUNT(DISTINCT r.id) as c FROM recinto r
         JOIN asiento_electoral ae ON r.asiento_id = ae.id
         JOIN municipio m ON ae.municipio_id = m.id
-        JOIN provincia pr ON m.provincia_id = pr.id
-        WHERE pr.es_urbano = 0
+        WHERE m.es_urbano = 0
       `)?.c || 0
 
-      stats.recintos_urbanos   = this.queryFirst(`
+      stats.recintos_urbanos = this.queryFirst(`
         SELECT COUNT(DISTINCT r.id) as c FROM recinto r
         JOIN asiento_electoral ae ON r.asiento_id = ae.id
         JOIN municipio m ON ae.municipio_id = m.id
-        JOIN provincia pr ON m.provincia_id = pr.id
-        WHERE pr.es_urbano = 1
+        WHERE m.es_urbano = 1
       `)?.c || 0
 
       totalRecords += stats.persona + stats.acta
