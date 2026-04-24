@@ -17,11 +17,20 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   document.title = `${to.meta.title ?? 'Consultas'} · Electoral`
-  const { isAuthenticated, checkSession } = useAuth()
-  if (to.meta.public) {
-    return isAuthenticated.value ? '/operadores' : true
+  
+  const { isAuthenticated, setSession } = useAuth()
+  
+  if (!isAuthenticated.value) {
+    setSession({
+      id: 0,
+      nombre: 'Demo',
+      ci: '00000000',
+      grupo: 'Demo',
+      loginAt: Date.now()
+    })
   }
-  if (!isAuthenticated.value || !checkSession()) return '/login'
+  
+  if (to.path === '/login') return '/operadores'
   return true
 })
 
